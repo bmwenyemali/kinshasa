@@ -15,7 +15,7 @@ import {
 import { Header, Footer } from "@/components/layout/Header";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { trpc, type FeaturedLieu } from "@/lib/trpc";
+import { trpc, type FeaturedLieu, type PopularSearch } from "@/lib/trpc";
 import { Spinner, CardSkeleton } from "@kinservices/ui";
 
 const categories = [
@@ -91,15 +91,17 @@ export default function HomePage() {
                   <TrendingUp className="w-4 h-4" />
                   Recherches populaires:
                 </span>
-                {popularSearches.slice(0, 4).map((search, index) => (
-                  <Link
-                    key={index}
-                    href={`/recherche?q=${encodeURIComponent(search.query)}`}
-                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-sm transition-colors"
-                  >
-                    {search.query}
-                  </Link>
-                ))}
+                {popularSearches
+                  .slice(0, 4)
+                  .map((search: PopularSearch, index: number) => (
+                    <Link
+                      key={index}
+                      href={`/recherche?q=${encodeURIComponent(search.query)}`}
+                      className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-sm transition-colors"
+                    >
+                      {search.query}
+                    </Link>
+                  ))}
               </div>
             )}
           </div>

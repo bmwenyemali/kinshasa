@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -35,9 +36,14 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">K</span>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Kin Services"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-lg"
+              priority
+            />
             <span className="font-bold text-xl text-foreground hidden sm:block">
               Kin Services
             </span>
@@ -156,9 +162,13 @@ export function Footer() {
           {/* Logo & Description */}
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">K</span>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Kin Services"
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-lg"
+              />
               <span className="font-bold text-xl">Kin Services</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed">

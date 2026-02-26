@@ -23,3 +23,5 @@ export type LieuService = LieuDetail["servicesProposed"][number];
 export type LieuAvis = NonNullable<LieuDetail["avis"]>[number];
 export type SearchResult = RouterOutputs["search"]["advanced"]["items"][number];
 export type FeaturedLieu = RouterOutputs["lieux"]["getFeatured"][number];
+export type PopularSearch =
+  RouterOutputs["search"]["getPopularSearches"][number];
