@@ -378,7 +378,7 @@ export default function LieuDetailPage() {
                                             </h4>
                                             <ul className="text-sm text-muted-foreground space-y-1 ml-6">
                                               {service.documentsRequis.map(
-                                                (doc, i) => (
+                                                (doc: string, i: number) => (
                                                   <li
                                                     key={i}
                                                     className="flex items-start gap-2"
