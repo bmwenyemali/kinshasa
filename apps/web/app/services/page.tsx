@@ -13,6 +13,7 @@ import {
   HelpCircle,
   ChevronRight,
   Search,
+  Sparkles,
 } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
 import { SearchBar } from "@/components/search/SearchBar";
@@ -35,27 +36,39 @@ const categoryIcons: Record<ServiceCategorie, React.ReactNode> = {
 };
 
 const categoryDescriptions: Record<ServiceCategorie, string> = {
-  ETAT_CIVIL: "Actes de naissance, mariage, décès, certificats divers",
-  SANTE: "Hôpitaux, centres de santé, vaccinations, analyses",
+  ETAT_CIVIL: "Actes de naissance, mariage, décès",
+  SANTE: "Hôpitaux, centres de santé, vaccins",
   JUSTICE: "Casier judiciaire, plaintes, tribunal",
-  EDUCATION: "Inscriptions scolaires, diplômes, équivalences",
-  IMPOTS: "Déclarations fiscales, patentes, taxes",
-  URGENCE: "Services d'urgence, pompiers, SAMU",
-  SOCIAL: "Aide sociale, pensions, allocations",
-  TRANSPORT: "Permis de conduire, carte grise, transport public",
+  EDUCATION: "Inscriptions, diplômes, équivalences",
+  IMPOTS: "Déclarations fiscales, patentes",
+  URGENCE: "Services d'urgence, pompiers",
+  SOCIAL: "Aide sociale, pensions",
+  TRANSPORT: "Permis, carte grise",
   AUTRE: "Autres services administratifs",
 };
 
-const categoryColors: Record<ServiceCategorie, string> = {
-  ETAT_CIVIL: "bg-blue-100 text-blue-700",
-  SANTE: "bg-red-100 text-red-700",
-  JUSTICE: "bg-purple-100 text-purple-700",
-  EDUCATION: "bg-green-100 text-green-700",
-  IMPOTS: "bg-amber-100 text-amber-700",
-  URGENCE: "bg-rose-100 text-rose-700",
-  SOCIAL: "bg-pink-100 text-pink-700",
-  TRANSPORT: "bg-orange-100 text-orange-700",
-  AUTRE: "bg-gray-100 text-gray-700",
+const categoryGradients: Record<ServiceCategorie, string> = {
+  ETAT_CIVIL: "from-blue-500 to-blue-600",
+  SANTE: "from-red-500 to-rose-600",
+  JUSTICE: "from-purple-500 to-violet-600",
+  EDUCATION: "from-emerald-500 to-green-600",
+  IMPOTS: "from-amber-500 to-orange-600",
+  URGENCE: "from-rose-500 to-red-600",
+  SOCIAL: "from-pink-500 to-fuchsia-600",
+  TRANSPORT: "from-orange-500 to-amber-600",
+  AUTRE: "from-gray-500 to-slate-600",
+};
+
+const categoryBgColors: Record<ServiceCategorie, string> = {
+  ETAT_CIVIL: "bg-blue-50 border-blue-100",
+  SANTE: "bg-red-50 border-red-100",
+  JUSTICE: "bg-purple-50 border-purple-100",
+  EDUCATION: "bg-emerald-50 border-emerald-100",
+  IMPOTS: "bg-amber-50 border-amber-100",
+  URGENCE: "bg-rose-50 border-rose-100",
+  SOCIAL: "bg-pink-50 border-pink-100",
+  TRANSPORT: "bg-orange-50 border-orange-100",
+  AUTRE: "bg-gray-50 border-gray-100",
 };
 
 export default function ServicesPage() {
@@ -70,14 +83,23 @@ export default function ServicesPage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-br from-primary to-primary-dark text-white py-12 px-4">
-          <div className="container mx-auto max-w-5xl">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+        <section className="relative bg-gradient-to-br from-primary via-primary-dark to-[#003d6b] text-white overflow-hidden">
+          <div className="absolute inset-0 hero-pattern" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+
+          <div className="relative container mx-auto max-w-5xl px-4 py-14">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-secondary" />
+              <span className="text-sm font-medium text-white/50">
+                Annuaire complet
+              </span>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight">
               Services Publics
             </h1>
-            <p className="text-white/80 max-w-xl text-lg">
-              Trouvez tous les services administratifs et publics disponibles à
-              Kinshasa, avec les documents requis, prix officiels et délais.
+            <p className="text-white/60 max-w-xl text-lg leading-relaxed">
+              Trouvez tous les services administratifs disponibles à Kinshasa,
+              avec les documents requis, prix officiels et délais.
             </p>
 
             <div className="mt-6">
@@ -86,14 +108,14 @@ export default function ServicesPage() {
                 onSearch={(q) =>
                   (window.location.href = `/recherche?q=${encodeURIComponent(q)}`)
                 }
-                className="max-w-xl"
+                className="max-w-xl shadow-2xl shadow-black/20"
               />
             </div>
           </div>
         </section>
 
         {/* Categories Grid */}
-        <section className="py-8 px-4">
+        <section className="py-10 px-4">
           <div className="container mx-auto max-w-5xl">
             <h2 className="text-xl font-bold text-foreground mb-6">
               Catégories de Services
@@ -102,6 +124,7 @@ export default function ServicesPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {Object.entries(SERVICE_CATEGORIE_LABELS).map(([cat, label]) => {
                 const count = categoryCounts?.[cat] ?? 0;
+                const isSelected = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
@@ -113,27 +136,29 @@ export default function ServicesPage() {
                       )
                     }
                     className={`
-                      relative p-5 rounded-xl border-2 transition-all text-left
+                      card-hover relative p-5 rounded-2xl border transition-all text-left
                       ${
-                        selectedCategory === cat
-                          ? "border-primary bg-primary/5 shadow-md"
-                          : "border-border hover:border-primary/50 bg-white"
+                        isSelected
+                          ? `${categoryBgColors[cat as ServiceCategorie]} shadow-md`
+                          : "border-border/50 bg-white hover:border-primary/30"
                       }
                     `}
                   >
                     <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
-                        categoryColors[cat as ServiceCategorie]
-                      }`}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-br ${
+                        categoryGradients[cat as ServiceCategorie]
+                      } text-white shadow-lg shadow-black/5`}
                     >
                       {categoryIcons[cat as ServiceCategorie]}
                     </div>
-                    <h3 className="font-semibold text-foreground">{label}</h3>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <h3 className="font-semibold text-foreground text-sm">
+                      {label}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                       {categoryDescriptions[cat as ServiceCategorie]}
                     </p>
                     {count > 0 && (
-                      <span className="absolute top-3 right-3 text-xs bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full">
+                      <span className="absolute top-3 right-3 text-xs bg-primary/10 text-primary font-bold px-2.5 py-0.5 rounded-full">
                         {count}
                       </span>
                     )}
@@ -146,8 +171,8 @@ export default function ServicesPage() {
 
         {/* Services by category */}
         {selectedCategory && (
-          <section className="py-8 px-4 bg-muted">
-            <div className="container mx-auto">
+          <section className="py-10 px-4 bg-white border-t border-border/50">
+            <div className="container mx-auto max-w-5xl animate-fade-in">
               <ServicesList category={selectedCategory} />
             </div>
           </section>
@@ -155,8 +180,8 @@ export default function ServicesPage() {
 
         {/* Popular services */}
         {!selectedCategory && (
-          <section className="py-8 px-4 bg-muted">
-            <div className="container mx-auto">
+          <section className="py-10 px-4 bg-white border-t border-border/50">
+            <div className="container mx-auto max-w-5xl">
               <h2 className="text-xl font-bold text-foreground mb-6">
                 Services Les Plus Demandés
               </h2>
