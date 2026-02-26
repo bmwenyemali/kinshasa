@@ -22,6 +22,7 @@ import {
   Clock,
   DollarSign,
   User,
+  Siren,
 } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
 import { ServiceCard } from "@/components/cards/ServiceCard";
@@ -33,11 +34,14 @@ type TabKey = "overview" | "services" | "quartiers" | "lieux";
 
 const LIEU_TYPE_ICON: Record<string, React.ReactNode> = {
   MAIRIE: <Landmark className="w-5 h-5" />,
+  MAISON_COMMUNALE: <Landmark className="w-5 h-5" />,
+  GOUVERNORAT: <Landmark className="w-5 h-5" />,
   ADMINISTRATION: <Building className="w-5 h-5" />,
   HOPITAL: <Stethoscope className="w-5 h-5" />,
   CLINIQUE: <Stethoscope className="w-5 h-5" />,
   CENTRE_SANTE: <Stethoscope className="w-5 h-5" />,
   COMMISSARIAT: <Shield className="w-5 h-5" />,
+  POLICE: <Siren className="w-5 h-5" />,
   TRIBUNAL: <Gavel className="w-5 h-5" />,
   ECOLE: <GraduationCap className="w-5 h-5" />,
   UNIVERSITE: <GraduationCap className="w-5 h-5" />,
@@ -431,29 +435,101 @@ export default function CommuneDetailPage() {
                       id: string;
                       name: string;
                       population?: number | null;
-                    }) => (
-                      <div
-                        key={quartier.id}
-                        className="bg-white rounded-xl border border-border p-4 card-hover"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center">
-                            <LayoutGrid className="w-5 h-5 text-primary" />
+                      chefQuartier?: string | null;
+                      referenceAdresse?: string | null;
+                      _count?: { lieux: number };
+                    }) => {
+                      const qLieux =
+                        commune.lieux?.filter(
+                          (l: any) =>
+                            l.quartierId === quartier.id ||
+                            l.quartier?.id === quartier.id,
+                        ) || [];
+                      return (
+                        <div
+                          key={quartier.id}
+                          className="bg-white rounded-xl border border-border p-4 card-hover hover:border-primary/30 transition-all cursor-pointer group"
+                          onClick={() => {
+                            setActiveTab("lieux");
+                            // scroll to top
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center flex-shrink-0">
+                              <LayoutGrid className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+                                {quartier.name}
+                              </h3>
+                              {quartier.population && (
+                                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                                  <Users className="w-3.5 h-3.5" />
+                                  {quartier.population.toLocaleString(
+                                    "fr-FR",
+                                  )}{" "}
+                                  hab.
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="font-medium text-foreground">
-                              {quartier.name}
-                            </h3>
-                            {quartier.population && (
-                              <p className="text-sm text-muted-foreground">
-                                {quartier.population.toLocaleString("fr-FR")}{" "}
-                                habitants
+
+                          {/* Details */}
+                          <div className="mt-3 space-y-1.5">
+                            {quartier.chefQuartier && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-primary" />
+                                Chef :{" "}
+                                <span className="font-medium text-foreground">
+                                  {quartier.chefQuartier}
+                                </span>
+                              </p>
+                            )}
+                            {quartier.referenceAdresse && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <MapPin className="w-3.5 h-3.5 text-primary" />
+                                {quartier.referenceAdresse}
                               </p>
                             )}
                           </div>
+
+                          {/* Lieu stats */}
+                          {(quartier._count?.lieux ?? qLieux.length) > 0 && (
+                            <div className="mt-3 pt-3 border-t border-border/50">
+                              <p className="text-xs text-muted-foreground mb-1.5 font-medium">
+                                Points d&apos;intérêt
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {(() => {
+                                  const typeCount: Record<string, number> = {};
+                                  qLieux.forEach((l: any) => {
+                                    typeCount[l.type] =
+                                      (typeCount[l.type] || 0) + 1;
+                                  });
+                                  return Object.entries(typeCount).map(
+                                    ([t, c]) => (
+                                      <span
+                                        key={t}
+                                        className="text-[10px] px-2 py-0.5 bg-primary/5 text-primary rounded-md font-medium"
+                                      >
+                                        {LIEU_TYPE_LABELS[t] || t} ({c})
+                                      </span>
+                                    ),
+                                  );
+                                })()}
+                                {qLieux.length === 0 &&
+                                  quartier._count?.lieux && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {quartier._count.lieux} lieu(x)
+                                    </span>
+                                  )}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ),
+                      );
+                    },
                   )}
                 </div>
               ) : (
@@ -548,6 +624,7 @@ const CATEGORIE_LABELS: Record<string, string> = {
   URGENCE: "Urgences",
   SOCIAL: "Social",
   TRANSPORT: "Transport",
+  SECURITE: "Sécurité",
   AUTRE: "Autres",
 };
 

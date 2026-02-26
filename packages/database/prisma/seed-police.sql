@@ -85,7 +85,7 @@ SELECT
   l.id,
   s.nom,
   s.description,
-  'SECURITE'::"ServiceCategorie",
+  'SECURITE'::service_categorie,
   s.prix,
   'FC',
   NOW(),

@@ -136,6 +136,7 @@ interface Lieu {
   responsable: string | null;
   verified: boolean;
   commune?: { name: string } | null;
+  quartier?: { name: string } | null;
   _count?: { avis: number };
   servicesProposed?: { nomService: string }[];
 }
@@ -248,7 +249,7 @@ function CarteContent() {
             </button>
 
             {showFilters && (
-              <div className="bg-white/95 backdrop-blur-lg rounded-xl shadow-xl border border-white/50 p-4 w-72 animate-fade-in">
+              <div className="bg-white/95 backdrop-blur-lg rounded-xl shadow-xl border border-white/50 p-4 w-72 animate-fade-in max-h-[calc(100vh-180px)] overflow-y-auto">
                 {/* Search within map */}
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -420,6 +421,8 @@ function CarteContent() {
                   <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary" />
                   <span>
                     {selectedLieu.adresse}
+                    {selectedLieu.quartier &&
+                      `, Q/${selectedLieu.quartier.name}`}
                     {selectedLieu.commune && `, ${selectedLieu.commune.name}`}
                   </span>
                 </p>
@@ -533,9 +536,9 @@ function CarteContent() {
           </div>
         )}
 
-        {/* Legend (bottom left, collapsed by default) */}
-        <div className="absolute bottom-4 left-4 z-10 hidden md:block">
-          {!selectedLieu && (
+        {/* Legend (bottom right, above stats) */}
+        {!selectedLieu && !showFilters && (
+          <div className="absolute bottom-16 right-3 z-10 hidden md:block">
             <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-white/50 p-3">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                 Légende
@@ -553,8 +556,8 @@ function CarteContent() {
                 ))}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -35,9 +35,17 @@ export const communeRouter = router({
         include: {
           quartiers: {
             orderBy: { name: "asc" },
+            include: {
+              _count: {
+                select: { lieux: true },
+              },
+            },
           },
           lieux: {
             include: {
+              quartier: {
+                select: { id: true, name: true },
+              },
               servicesProposed: true,
               _count: {
                 select: { avis: true },

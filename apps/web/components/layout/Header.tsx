@@ -283,7 +283,18 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-700/50 mt-10 pt-6 text-center text-sm text-gray-500">
-          <p>© 2026 Kin Services. Développé par Akili Group.</p>
+          <p>
+            © 2026 Kin Services. Développé par{" "}
+            <a
+              href="https://akilig.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition"
+            >
+              Akili Group
+            </a>
+            .
+          </p>
         </div>
       </div>
     </footer>
