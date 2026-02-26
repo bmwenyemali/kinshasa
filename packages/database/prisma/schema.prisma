@@ -1,0 +1,272 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// GEOGRAPHIC TABLES
+// ============================================
+
+model Commune {
+  id          String   @id @default(uuid())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  population  Int?
+  superficie  Float?   // en km²
+  latitude    Decimal? @db.Decimal(10, 8)
+  longitude   Decimal? @db.Decimal(11, 8)
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  quartiers Quartier[]
+  lieux     Lieu[]
+
+  @@map("communes")
+}
+
+model Quartier {
+  id        String   @id @default(uuid())
+  communeId String   @map("commune_id")
+  name      String   @db.VarChar(100)
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  commune Commune @relation(fields: [communeId], references: [id], onDelete: Cascade)
+  lieux   Lieu[]
+
+  @@unique([communeId, name])
+  @@map("quartiers")
+}
+
+model ZoneSante {
+  id                  String   @id @default(uuid())
+  name                String   @unique @db.VarChar(100)
+  description         String?  @db.Text
+  communeResponsable  String?  @map("commune_responsable") @db.VarChar(100)
+  population          Int?
+  nombreAiresSante    Int?     @map("nombre_aires_sante")
+  latitude            Decimal? @db.Decimal(10, 8)
+  longitude           Decimal? @db.Decimal(11, 8)
+  telephone           String?  @db.VarChar(50)
+  email               String?  @db.VarChar(100)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  lieux Lieu[]
+
+  @@map("zones_sante")
+}
+
+// ============================================
+// LOCATION & SERVICE TABLES
+// ============================================
+
+enum LieuType {
+  HOPITAL
+  CLINIQUE
+  CENTRE_SANTE
+  ADMINISTRATION
+  MAIRIE
+  COMMISSARIAT
+  TRIBUNAL
+  ECOLE
+  UNIVERSITE
+  AUTRE
+
+  @@map("lieu_type")
+}
+
+enum ServiceCategorie {
+  ETAT_CIVIL
+  SANTE
+  JUSTICE
+  EDUCATION
+  IMPOTS
+  URGENCE
+  SOCIAL
+  TRANSPORT
+  AUTRE
+
+  @@map("service_categorie")
+}
+
+model Lieu {
+  id          String   @id @default(uuid())
+  nom         String   @db.VarChar(200)
+  type        LieuType
+  communeId   String?  @map("commune_id")
+  quartierId  String?  @map("quartier_id")
+  zoneSanteId String?  @map("zone_sante_id")
+  adresse     String?  @db.Text
+  reperes     String?  @db.Text // "À côté de l'INPP"
+  telephone   String?  @db.VarChar(50)
+  telephone2  String?  @map("telephone_2") @db.VarChar(50)
+  email       String?  @db.VarChar(100)
+  siteWeb     String?  @map("site_web") @db.VarChar(200)
+  horaires    Json?    // Stockage flexible des horaires
+  latitude    Decimal? @db.Decimal(10, 8)
+  longitude   Decimal? @db.Decimal(11, 8)
+  photos      String[] // URLs Cloudinary
+  verified    Boolean  @default(false)
+  featured    Boolean  @default(false)
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  commune           Commune?          @relation(fields: [communeId], references: [id])
+  quartier          Quartier?         @relation(fields: [quartierId], references: [id])
+  zoneSante         ZoneSante?        @relation(fields: [zoneSanteId], references: [id])
+  servicesProposed  ServicePropose[]
+  avis              Avis[]
+  signalements      Signalement[]
+  favoris           Favori[]
+
+  @@index([communeId])
+  @@index([quartierId])
+  @@index([zoneSanteId])
+  @@index([type])
+  @@index([verified])
+  @@map("lieux")
+}
+
+model ServicePropose {
+  id                     String           @id @default(uuid())
+  lieuId                 String           @map("lieu_id")
+  categorie              ServiceCategorie
+  nomService             String           @map("nom_service") @db.VarChar(200)
+  description            String?          @db.Text
+  documentsRequis        String[]         @map("documents_requis")
+  prixOfficiel           Decimal?         @map("prix_officiel") @db.Decimal(12, 2)
+  devise                 String           @default("FC") @db.VarChar(10)
+  delai                  String?          @db.VarChar(100) // "48h", "3 jours ouvrables"
+  procedure              String?          @db.Text         // Description étape par étape
+  conditionsParticulieres String?          @map("conditions_particulieres") @db.Text
+  actif                  Boolean          @default(true)
+  createdAt              DateTime         @default(now()) @map("created_at")
+  updatedAt              DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  lieu Lieu @relation(fields: [lieuId], references: [id], onDelete: Cascade)
+
+  @@index([lieuId])
+  @@index([categorie])
+  @@index([nomService])
+  @@map("services_proposes")
+}
+
+// ============================================
+// USER INTERACTION TABLES
+// ============================================
+
+model Avis {
+  id             String    @id @default(uuid())
+  lieuId         String    @map("lieu_id")
+  userId         String?   @map("user_id")
+  userName       String?   @map("user_name") @db.VarChar(100)
+  note           Int       // 1-5
+  commentaire    String?   @db.Text
+  dateExperience DateTime? @map("date_experience") @db.Date
+  approved       Boolean   @default(true)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  lieu Lieu @relation(fields: [lieuId], references: [id], onDelete: Cascade)
+
+  @@index([lieuId])
+  @@index([userId])
+  @@map("avis_utilisateurs")
+}
+
+enum SignalementType {
+  INFO_ERRONNEE
+  CORRUPTION
+  FERME
+  PRIX_INCORRECT
+  AUTRE
+
+  @@map("signalement_type")
+}
+
+model Signalement {
+  id          String          @id @default(uuid())
+  lieuId      String?         @map("lieu_id")
+  serviceId   String?         @map("service_id")
+  type        SignalementType
+  description String          @db.Text
+  userId      String?         @map("user_id")
+  email       String?         @db.VarChar(100)
+  traite      Boolean         @default(false)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  lieu Lieu? @relation(fields: [lieuId], references: [id])
+
+  @@index([lieuId])
+  @@index([traite])
+  @@map("signalements")
+}
+
+model Favori {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  lieuId    String   @map("lieu_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  lieu Lieu @relation(fields: [lieuId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lieuId])
+  @@index([userId])
+  @@map("favoris")
+}
+
+// ============================================
+// SEARCH & ANALYTICS TABLES
+// ============================================
+
+model SearchHistory {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  query     String   @db.VarChar(200)
+  filters   Json?
+  resultCount Int?   @map("result_count")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([query])
+  @@map("search_history")
+}
+
+model Alerte {
+  id        String   @id @default(uuid())
+  titre     String   @db.VarChar(200)
+  message   String   @db.Text
+  type      String   @db.VarChar(50) // info, warning, urgent
+  communeId String?  @map("commune_id")
+  actif     Boolean  @default(true)
+  dateDebut DateTime @map("date_debut")
+  dateFin   DateTime? @map("date_fin")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([actif])
+  @@index([communeId])
+  @@map("alertes")
+}

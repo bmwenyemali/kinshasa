@@ -1,0 +1,27 @@
+Supabase:
+Company Name : Kinshasa
+Project Name : Kin Services
+Mot de Passe : 20Kinsh@s@26!
+Project ID : jrscqqgwwvhflzpgfohj
+Default API Key : sb_publishable_5aq_W6z7nP36cRTCy1tePg_kBFDQ_2r
+Anon Public : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impyc2NxcWd3d3ZoZmx6cGdmb2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzMzMjEsImV4cCI6MjA4NzYwOTMyMX0.QzGXSTeVwd6UfLA9hW4MU65xZWPWrca9Rmbdfncltw4
+
+MapBox :
+username : akiligroup
+password : BMM@Akili25
+MapBox Token : 
+Name : Kinshasa
+Token : [REDACTED - Get from Mapbox dashboard]
+
+Cloudinary :
+dsgizthan
+API Key : 882123922877593
+API Secret : MLPAtgZ5A4jeZaF6Q9nQ6pb3dMw
+CLOUDINARY_URL=cloudinary://882123922877593:MLPAtgZ5A4jeZaF6Q9nQ6pb3dMw@dsgizthan
+preset name : kinshasa
+
+Google app 16-Digit Passcode : jiuj zgvh fqtf zyhl
+Gmail: akili.digit@gmail.com
+AppName: Kinshasa
+
+GitHub : https://github.com/bmwenyemali/kinshasa.git

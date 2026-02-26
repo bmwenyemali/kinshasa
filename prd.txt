@@ -1,0 +1,586 @@
+
+Product Requirement Document
+
+# 📋 KIN SERVICES - PRODUCT REQUIREMENT DOCUMENT (PRD)
+Version: 1.0  
+Date: 2026  
+Auteur: Agent Mode  
+Technologies: Next.js, React Native, Supabase, MapBox, Cloudinary  
+
+---
+
+## 1. APERÇU DU PROJET
+
+### 1.1 Objectif
+Développer une plateforme complète (web + mobile) nommée "Kin Services" qui répertorie tous les services publics de Kinshasa: services offerts aux communes, quartiers, zones de santé, hôpitaux, bureaux administratifs, avec informations détaillées (localisation (communes, quartiers, zones de santé, addresses, coordonnees), documents requis, prix officiels, délais, contacts, et autres a proposer...).
+
+### 1.2 Problème résolu
+Les Kinois perdent du temps et de l'argent à chercher les bons services, ignorent les prix officiels (vulnérabilité à la corruption), et n'ont pas d'information centralisée fiable.
+
+### 1.3 Public cible
+- Citoyens kinois (10-75 ans, possesseurs de smartphones Android principalement)
+- Expatriés/nouveaux arrivants cherchant à s'orienter
+- Administrations publiques (pour diffusion d'informations officielles)
+
+---
+
+## 2. FONCTIONNALITÉS DÉTAILLÉES
+
+### 2.1 Onboarding (Première utilisation)
+| Écran | Éléments | Données collectées |
+|-------|----------|---------------------|
+| 1 - Bienvenue | Logo Kin Services, message d'accueil | - | (propose)
+| 2 - Profil | Champs: Nom (optionnel), Âge (selecteur (peut etre c'est mieux de mettre les tranches d'age en 5 ans d'ecart)), Sexe (M/F), Province d'origine, Commune de résidence | Stockées localement (AsyncStorage) |
+| 3 - Préférences | Notifications (oui/non), Thème (clair/sombre auto), Langue (Français/Lingala optionnel) | - |
+
+### 2.2 Structure de navigation principale
+
+```
+Accueil
+├── Recherche rapide (barre de recherche globale)
+├── Catégories principales
+│   ├── Communes (24 communes)
+│   ├── Zones de Santé (35 zones)
+│   ├── Hôpitaux & Cliniques ou Centres de Sante
+│   ├── Services Administratifs
+│   └── Urgences
+├── Services récents / populaires
+└── Alertes municipales (bandeau)
+
+Carte (MapBox)
+├── Vue interactive avec tous les lieux
+├── Filtres par catégorie (icônes colorées)
+├── Recherche par zone
+└── "Autour de moi" (géolocalisation)
+
+Favoris
+├── Services sauvegardés
+├── Recherches récentes
+└── Notifications personnalisées
+
+Profil
+├── Mes informations (âge, sexe, commune)
+├── Historique de recherche
+├── Paramètres (notifications, thème, langue)
+└── À propos / Contact
+```
+
+### 2.3 Fiche détaillée d'un service
+
+Chaque lieu/service aura une fiche contenant:
+
+```
+📌 [NOM DU SERVICE]
+📍 [Adresse précise + repères]
+⭐ [Note moyenne] (basée sur avis utilisateurs)
+
+INFORMATIONS GÉNÉRALES
+├── Commune: [Nom]
+├── Quartier: [Nom]
+├── Zone de santé: [Nom]
+├── Horaires: [Lun-Ven: 8h-16h, Sam: 8h-12h]
+├── Téléphone: [Numéro(s)]
+└── Site web: [URL si disponible]
+
+SERVICES DISPONIBLES
+└── Liste déroulante par catégorie:
+
+[CATÉGORIE: ÉTAT CIVIL]
+├── Carte d'identité
+│   ├── Documents requis: [liste détaillée]
+│   ├── Prix officiel: [montant en FC]
+│   ├── Délai: [ex: 48h]
+│   └── Procédure: [étapes numérotées]
+├── Casier judiciaire
+│   ├── Documents requis: [liste]
+│   ├── Prix: [montant]
+│   └── Délai: [ex: 72h]
+└── Acte de naissance
+    └── [...]
+
+[CATÉGORIE: SANTÉ]
+├── Dépistage VIH
+│   ├── Prix: Gratuit / [montant]
+│   ├── Horaires spécifiques: [si différents]
+│   └── Contact préalable: [oui/non]
+├── Vaccination
+└── Consultation prénatale
+
+AVIS UTILISATEURS
+├── [Étoiles] "Très bon accueil" - Jean, 02/2026
+├── [Étoiles] "Frais corrects" - Marie, 01/2026
+└── Bouton "Ajouter un avis"
+
+ACTIONS
+🔄 Signaler une information erronée
+⭐ Ajouter aux favoris
+🗺️ Obtenir l'itinéraire (ouvre Google Maps/MapBox)
+📱 Partager cette fiche
+```
+
+au fait l'idee c'est une application du genre "ou trouver le service". donc l'utilisateur peut taper sur la base des recherche "moustiquaire" ou "acte de naissance", l'application va l'orienter ou il peut trouver les centres de sante qui distribue les moustiquaires ou les lieux on peut obtenir un acte de naissance, pres de sois, montrer l'addresse de la commune sur une carte mapbox, les details et etapes pour avoir le document ...
+
+---
+
+## 3. BASE DE DONNÉES (SUPABASE)
+
+### 3.1 proposition Schéma de données (tu peux modifier selon les besoins)
+
+```sql
+-- Table: communes
+CREATE TABLE communes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  latitude DECIMAL(10,8),
+  longitude DECIMAL(11,8),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Table: quartiers
+CREATE TABLE quartiers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  commune_id UUID REFERENCES communes(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  latitude DECIMAL(10,8),
+  longitude DECIMAL(11,8)
+);
+
+-- Table: zones_sante
+CREATE TABLE zones_sante (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  commune_responsable VARCHAR(100), -- Commune où se trouve le bureau
+  latitude DECIMAL(10,8),
+  longitude DECIMAL(11,8)
+);
+
+-- Table: lieux (hôpitaux, bureaux, services)
+CREATE TABLE lieux (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  nom VARCHAR(200) NOT NULL,
+  type VARCHAR(50) CHECK (type IN ('hopital', 'clinique', 'administration', 'mairie', 'commissariat', 'autre')),
+  commune_id UUID REFERENCES communes(id),
+  quartier_id UUID REFERENCES quartiers(id),
+  zone_sante_id UUID REFERENCES zones_sante(id),
+  adresse TEXT,
+  reperes TEXT, -- "À côté de l'INPP"
+  telephone VARCHAR(50),
+  telephone_2 VARCHAR(50),
+  email VARCHAR(100),
+  site_web VARCHAR(200),
+  horaires JSONB, -- Stockage flexible des horaires
+  latitude DECIMAL(10,8),
+  longitude DECIMAL(11,8),
+  photos TEXT[], -- URLs Cloudinary
+  verified BOOLEAN DEFAULT FALSE, -- Information vérifiée?
+  created_by UUID REFERENCES auth.users(id),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Table: services_proposes
+CREATE TABLE services_proposes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  lieu_id UUID REFERENCES lieux(id) ON DELETE CASCADE,
+  categorie VARCHAR(50) CHECK (categorie IN ('etat_civil', 'sante', 'justice', 'education', 'impots', 'urgence', 'autre')),
+  nom_service VARCHAR(200) NOT NULL,
+  description TEXT,
+  documents_requis TEXT[], -- Liste de documents
+  prix_officiel DECIMAL(10,2), -- En Francs Congolais
+  devise VARCHAR(10) DEFAULT 'FC',
+  delai VARCHAR(100), -- "48h", "3 jours ouvrables"
+  procedure TEXT, -- Description étape par étape
+  conditions_particulieres TEXT
+);
+
+-- Table: avis_utilisateurs
+CREATE TABLE avis_utilisateurs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  lieu_id UUID REFERENCES lieux(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id),
+  note INTEGER CHECK (note >= 1 AND note <= 5),
+  commentaire TEXT,
+  date_experience DATE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Table: signalements
+CREATE TABLE signalements (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  lieu_id UUID REFERENCES lieux(id),
+  type VARCHAR(50) CHECK (type IN ('info_erronnee', 'corruption', 'ferme', 'autre')),
+  description TEXT,
+  user_id UUID REFERENCES auth.users(id),
+  traite BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### 3.2 Configuration Supabase (Déjà prête!)
+
+```javascript
+// .env.local (web) / .env (mobile)
+NEXT_PUBLIC_SUPABASE_URL=https://jrscqqgwwvhflzpgfohj.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impyc2NxcWd3d3ZoZmx6cGdmb2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzMzMjEsImV4cCI6MjA4NzYwOTMyMX0.QzGXSTeVwd6UfLA9hW4MU65xZWPWrca9Rmbdfncltw4
+```
+
+---
+
+## 4. CONFIGURATION DES SERVICES EXTERNES
+
+### 4.1 MapBox (Cartes)
+
+```javascript
+// Configuration MapBox
+const mapboxToken = "pk.YOUR_MAPBOX_TOKEN_HERE";
+
+// Styles recommandés
+- Rues: 'mapbox://styles/mapbox/streets-v12'
+- Satellite: 'mapbox://styles/mapbox/satellite-streets-v12'
+- Simple: 'mapbox://styles/mapbox/light-v11'
+```
+
+### 4.2 Cloudinary (Images)
+
+```javascript
+// Configuration Cloudinary
+cloudinary: {
+  cloudName: 'dsgizthan',
+  apiKey: '882123922877593',
+  apiSecret: 'MLPAtgZ5A4jeZaF6Q9nQ6pb3dMw',
+  uploadPreset: 'kinshasa'
+}
+
+// Upload d'images
+// Utiliser upload-preset "kinshasa" pour toutes les photos de lieux
+```
+
+### 4.3 Google (pour déploiement App Store)
+
+```
+Compte: akili.digit@gmail.com
+App-Specific Password: jiuj zgvh fqtf zyhl
+App Name: Kinshasa
+```
+
+---
+
+## 5. ARCHITECTURE DU PROJET (MONOREPO) (tu peux proposer une autre architecture s'il y a lieu)
+
+```
+kinservices/
+├── apps/
+│   ├── web/                          # Next.js 15+
+│   │   ├── app/                       # App Router
+│   │   │   ├── (auth)/                # Routes auth (onboarding)
+│   │   │   ├── (main)/                # Routes principales
+│   │   │   │   ├── accueil/
+│   │   │   │   ├── carte/
+│   │   │   │   ├── favoris/
+│   │   │   │   └── profil/
+│   │   │   └── api/                    # API routes (Next.js)
+│   │   │       └── trpc/                # tRPC endpoints
+│   │   ├── components/                  # Composants spécifiques web
+│   │   ├── lib/                          # Utilitaires web
+│   │   ├── public/
+│   │   ├── styles/
+│   │   ├── next.config.js
+│   │   └── package.json
+│   │
+│   └── mobile/                          # React Native + Expo
+│       ├── src/
+│       │   ├── app/                      # Navigation (Expo Router)
+│       │   ├── components/                # Composants spécifiques mobile
+│       │   ├── screens/                   # Écrans
+│       │   ├── hooks/                      # Custom hooks
+│       │   └── utils/                      # Utilitaires
+│       ├── assets/
+│       ├── app.json
+│       └── package.json
+│
+├── packages/
+│   ├── api/                              # tRPC router & types
+│   │   ├── src/
+│   │   │   ├── routers/
+│   │   │   │   ├── communes.ts
+│   │   │   │   ├── lieux.ts
+│   │   │   │   ├── services.ts
+│   │   │   │   └── avis.ts
+│   │   │   ├── context.ts
+│   │   │   └── trpc.ts
+│   │   └── package.json
+│   │
+│   ├── database/                          # Prisma schemas
+│   │   ├── prisma/
+│   │   │   └── schema.prisma
+│   │   ├── migrations/
+│   │   └── package.json
+│   │
+│   └── ui/                                 # Composants partagés
+│       ├── src/
+│       │   ├── buttons/
+│       │   ├── cards/
+│       │   ├── forms/
+│       │   └── index.ts
+│       └── package.json
+│
+├── turbo.json
+├── package.json
+└── README.md
+```
+
+---
+
+## 6. DESIGN SYSTEM (Style guide)
+
+### 6.1 Couleurs
+```css
+:root {
+  / Palette principale /
+  --primary: #0077BE;        / Bleu Congo (rivière) /
+  --primary-dark: #005A9E;
+  --secondary: #FDB913;       / Jaune (soleil, énergie) /
+  --accent: #CE1126;          / Rouge (pour alertes/urgences) /
+  
+  / Neutres /
+  --background: #F5F7FA;
+  --surface: #FFFFFF;
+  --text-primary: #1A2B3C;
+  --text-secondary: #546E7A;
+  --border: #E0E7EF;
+  
+  / Statuts /
+  --success: #2E7D32;
+  --warning: #ED6C02;
+  --error: #D32F2F;
+  --info: #0288D1;
+}
+```
+
+### 6.2 Typographie
+```css
+/ Inter (Google Fonts) pour lisibilité /
+--font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+/ Tailles /
+--text-xs: 0.75rem;   / 12px /
+--text-sm: 0.875rem;  / 14px /
+--text-base: 1rem;    / 16px /
+--text-lg: 1.125rem;  / 18px /
+--text-xl: 1.25rem;   / 20px /
+--text-2xl: 1.5rem;   / 24px /
+```
+
+### 6.3 Composants UI réutilisables
+
+ServiceCard (utilisé partout):
+- Image/icône catégorie
+- Titre
+- Commune
+- Distance (si géolocalisé)
+- Bouton favoris
+- Badge "Vérifié" si administrateur confirmé
+
+SearchBar:
+- Input avec icône recherche
+- Filtres rapides (catégories)
+- Historique des recherches
+
+BottomNavigation (mobile):
+- Accueil
+- Carte
+- Favoris
+- Profil
+
+---
+
+## 7. API ENDPOINTS (tRPC)
+
+```typescript
+// Routers principaux à implémenter
+
+// CommuneRouter
+- getCommunes(): Liste toutes les communes
+- getCommuneById(id): Détail d'une commune
+- getCommunesWithStats(): Communes + nombre de lieux
+
+// QuartierRouter
+- getQuartiersByCommune(communeId): Liste quartiers
+- getQuartierDetails(id): Détail quartier
+
+// ZoneSanteRouter
+- getAllZones(): Toutes les zones de santé
+- getZoneWithServices(id): Zone + hôpitaux/cliniques associés
+
+// LieuRouter
+- searchLieux(query, filters): Recherche avancée
+- getLieuxByCommune(communeId, type?): Filtrage par commune
+- getLieuxByZone(zoneId): Lieux dans zone de santé
+- getLieuDetails(id): Fiche complète avec services associés
+- getNearbyLieux(lat, lng, radius): Autour de moi
+
+// ServiceRouter
+- getServicesByLieu(lieuId): Tous services d'un lieu
+- getServiceDetails(id): Détail service (documents, prix)
+- searchServices(query): Recherche de services
+
+// AvisRouter
+- getAvisByLieu(lieuId): Tous avis
+- addAvis(input): Nouvel avis (auth requis)
+- updateAvis(id, input): Modifier avis
+
+// SignalementRouter
+- createSignalement(input): Signaler problème (auth requis)
+```
+
+---
+
+## 8. DÉVELOPPEMENT PAS À PAS
+
+### Phase 1: Setup 
+
+```bash
+# 1. Cloner le dépôt
+git clone https://github.com/bmwenyemali/kinshasa.git
+cd kinshasa
+
+# 2. Installer dépendances
+npm install
+npx turbo login
+
+# 3. Configurer les variables d'environnement
+cp apps/web/.env.example apps/web/.env.local
+cp apps/mobile/.env.example apps/mobile/.env
+
+# 4. Initialiser Supabase
+npx supabase init
+npx supabase link --project-ref jrscqqgwwvhflzpgfohj
+
+# 5. Lancer les migrations Prisma
+cd packages/database
+npx prisma migrate dev --name init
+```
+
+### Phase 2: Base de données
+
+- Implémenter les 24 communes de Kinshasa
+- Ajouter les 35 zones de santé
+- Créer les types d'utilisateurs (anonyme, authentifié, admin)
+- Configurer Row Level Security (RLS) dans Supabase
+
+### Phase 3: API 
+
+- Implémenter tous les routers tRPC
+- Tester avec Postman/Insomnia
+- Ajouter validation des entrées (Zod)
+
+### Phase 4: Web App 
+
+- Layout responsive (mobile-first)
+- Page d'accueil avec recherche
+- Pages détaillées pour chaque type de contenu
+- Intégration MapBox
+- Administration (CRUD pour les données)
+
+### Phase 5: Mobile App 
+
+- Onboarding screens
+- Navigation avec Expo Router
+- Écrans principaux (adaptés du web)
+- Géolocalisation native
+- Mode hors-ligne (cache)
+
+### Phase 6: Déploiement 
+
+- Web: `vercel --prod`
+- Mobile Android: `eas build -p android --profile production`
+- Mobile iOS: `eas build -p ios --profile production`
+
+---
+
+## 9. TESTS ET QUALITÉ
+
+### Tests unitaires (Jest)
+- Composants UI
+- Utilitaires
+- Validation des données
+
+### Tests d'intégration
+- API tRPC
+- Base de données
+- Authentication
+
+### Tests end-to-end (Cypress/Detox)
+- Parcours utilisateur complet
+- Recherche de service
+- Ajout aux favoris
+
+---
+
+## 10. COMMANDES UTILES POUR L'AGENT MODE
+
+```bash
+# Développement web
+cd apps/web && npm run dev
+
+# Développement mobile
+cd apps/mobile && npx expo start
+
+# Générer types Prisma
+cd packages/database && npx prisma generate
+
+# Linter
+npm run lint
+
+# Build web
+npm run build:web
+
+# Build mobile
+npm run build:mobile
+```
+
+---
+
+
+INSTRUCTIONS:
+1. Initialise le monorepo avec Turborepo
+2. Configure Supabase avec les identifiants fournis
+3. Crée les tables selon le schéma Prisma
+4. Implémente l'API tRPC complète
+5. Développe l'application web Next.js avec:
+   - Page d'accueil avec recherche
+   - Liste des communes
+   - Fiches détaillées avec MapBox
+   - Interface d'administration
+6. Développe l'application mobile React Native avec:
+   - Onboarding (âge, sexe, commune)
+   - Navigation par tabs
+   - Écran carte avec MapBox
+   - Favoris offline
+7. Assure-toi que tout est type-safe
+8. Utilise les tokens MapBox et Cloudinary fournis
+9. Suis le design system défini
+10. Commence par la Phase 1 et progresse étape par étape
+
+IMPORTANT: 
+- Tous les identifiants sont dans le PRD
+- Le dépôt GitHub existe déjà: https://github.com/bmwenyemali/kinshasa.git
+- Réponds en français (pour la communication)
+- Écris le code en anglais (convention)
+```
+
+---
+
+## 12. LIVRABLES FINAUX
+
+1. Site web: https://kinshasa-services.vercel.app
+2. Application mobile: 
+   - Android: Google Play Store "Kin Services"
+   - iOS: Apple App Store "Kin Services"
+3. Documentation: README.md avec instructions d'installation
+4. Backoffice: Interface d'administration pour gérer les données
+
+---
+
+J'ai mis l'image du logo et favicon de l'application dans le dossier
