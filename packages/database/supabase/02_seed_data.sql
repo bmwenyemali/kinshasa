@@ -129,7 +129,7 @@ ON CONFLICT (commune_id, name) DO NOTHING;
 -- Hôpital Général de Kinshasa (ex-Mama Yemo)
 INSERT INTO lieux (id, nom, type, commune_id, zone_sante_id, adresse, telephone, email, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000001',
+    'b1000001-0000-0000-0000-000000000001',
     'Hôpital Général Provincial de Référence de Kinshasa',
     'HOPITAL'::lieu_type,
     c.id,
@@ -149,7 +149,7 @@ ON CONFLICT DO NOTHING;
 -- Clinique Ngaliema
 INSERT INTO lieux (id, nom, type, commune_id, zone_sante_id, adresse, telephone, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000002',
+    'b1000001-0000-0000-0000-000000000002',
     'Clinique Ngaliema',
     'CLINIQUE'::lieu_type,
     c.id,
@@ -168,7 +168,7 @@ ON CONFLICT DO NOTHING;
 -- Centre Hospitalier Monkole
 INSERT INTO lieux (id, nom, type, commune_id, zone_sante_id, adresse, telephone, site_web, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000003',
+    'b1000001-0000-0000-0000-000000000003',
     'Centre Hospitalier Monkole',
     'HOPITAL'::lieu_type,
     c.id,
@@ -188,7 +188,7 @@ ON CONFLICT DO NOTHING;
 -- Centre de Santé Boyambi
 INSERT INTO lieux (id, nom, type, commune_id, zone_sante_id, adresse, telephone, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000004',
+    'b1000001-0000-0000-0000-000000000004',
     'Centre de Santé Boyambi',
     'CENTRE_SANTE'::lieu_type,
     c.id,
@@ -211,7 +211,7 @@ ON CONFLICT DO NOTHING;
 -- Hôtel de Ville de Kinshasa
 INSERT INTO lieux (id, nom, type, commune_id, adresse, telephone, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000010',
+    'b1000001-0000-0000-0000-000000000010',
     'Hôtel de Ville de Kinshasa',
     'MAIRIE'::lieu_type,
     c.id,
@@ -228,7 +228,7 @@ ON CONFLICT DO NOTHING;
 -- Commune de Lemba
 INSERT INTO lieux (id, nom, type, commune_id, adresse, telephone, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000011',
+    'b1000001-0000-0000-0000-000000000011',
     'Commune de Lemba - Bureau de l''État Civil',
     'ADMINISTRATION'::lieu_type,
     c.id,
@@ -245,7 +245,7 @@ ON CONFLICT DO NOTHING;
 -- Commissariat Central
 INSERT INTO lieux (id, nom, type, commune_id, adresse, telephone, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000012',
+    'b1000001-0000-0000-0000-000000000012',
     'Commissariat Provincial de la Police',
     'COMMISSARIAT'::lieu_type,
     c.id,
@@ -262,7 +262,7 @@ ON CONFLICT DO NOTHING;
 -- Tribunal de Grande Instance
 INSERT INTO lieux (id, nom, type, commune_id, adresse, telephone, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000013',
+    'b1000001-0000-0000-0000-000000000013',
     'Tribunal de Grande Instance de Kinshasa/Gombe',
     'TRIBUNAL'::lieu_type,
     c.id,
@@ -283,7 +283,7 @@ ON CONFLICT DO NOTHING;
 -- UNIKIN
 INSERT INTO lieux (id, nom, type, commune_id, adresse, telephone, site_web, horaires, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000020',
+    'b1000001-0000-0000-0000-000000000020',
     'Université de Kinshasa (UNIKIN)',
     'UNIVERSITE'::lieu_type,
     c.id,
@@ -301,7 +301,7 @@ ON CONFLICT DO NOTHING;
 -- UCC
 INSERT INTO lieux (id, nom, type, commune_id, adresse, telephone, site_web, latitude, longitude, verified, featured)
 SELECT 
-    'l1000001-0000-0000-0000-000000000021',
+    'b1000001-0000-0000-0000-000000000021',
     'Université Catholique du Congo (UCC)',
     'UNIVERSITE'::lieu_type,
     c.id,
@@ -322,7 +322,7 @@ ON CONFLICT DO NOTHING;
 -- Services État Civil - Commune de Lemba
 INSERT INTO services_proposes (lieu_id, categorie, nom_service, description, documents_requis, prix_officiel, devise, delai, procedure)
 SELECT 
-    'l1000001-0000-0000-0000-000000000011',
+    'b1000001-0000-0000-0000-000000000011',
     'ETAT_CIVIL'::service_categorie,
     'Acte de Naissance',
     'Obtention d''un acte de naissance pour enfant né dans la commune',
@@ -335,11 +335,11 @@ SELECT
 3. Présenter les documents requis
 4. Payer les frais
 5. Récupérer l''acte de naissance'
-WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'l1000001-0000-0000-0000-000000000011');
+WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'b1000001-0000-0000-0000-000000000011');
 
 INSERT INTO services_proposes (lieu_id, categorie, nom_service, description, documents_requis, prix_officiel, devise, delai, procedure)
 SELECT 
-    'l1000001-0000-0000-0000-000000000011',
+    'b1000001-0000-0000-0000-000000000011',
     'ETAT_CIVIL'::service_categorie,
     'Attestation de Résidence',
     'Obtention d''une attestation de résidence dans la commune',
@@ -351,11 +351,11 @@ SELECT
 2. Remplir le formulaire
 3. Payer les frais
 4. Recevoir le document'
-WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'l1000001-0000-0000-0000-000000000011');
+WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'b1000001-0000-0000-0000-000000000011');
 
 INSERT INTO services_proposes (lieu_id, categorie, nom_service, description, documents_requis, prix_officiel, devise, delai, procedure)
 SELECT 
-    'l1000001-0000-0000-0000-000000000011',
+    'b1000001-0000-0000-0000-000000000011',
     'ETAT_CIVIL'::service_categorie,
     'Acte de Mariage',
     'Célébration et enregistrement du mariage civil',
@@ -368,12 +368,12 @@ SELECT
 3. Fixation de la date de célébration
 4. Cérémonie de mariage
 5. Remise de l''acte de mariage'
-WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'l1000001-0000-0000-0000-000000000011');
+WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'b1000001-0000-0000-0000-000000000011');
 
 -- Services Santé - Hôpital Général
 INSERT INTO services_proposes (lieu_id, categorie, nom_service, description, documents_requis, prix_officiel, devise, delai, procedure)
 SELECT 
-    'l1000001-0000-0000-0000-000000000001',
+    'b1000001-0000-0000-0000-000000000001',
     'SANTE'::service_categorie,
     'Consultation Générale',
     'Consultation médicale avec un médecin généraliste',
@@ -386,11 +386,11 @@ SELECT
 3. Recevoir un numéro
 4. Attendre son tour
 5. Consulter le médecin'
-WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'l1000001-0000-0000-0000-000000000001');
+WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'b1000001-0000-0000-0000-000000000001');
 
 INSERT INTO services_proposes (lieu_id, categorie, nom_service, description, documents_requis, prix_officiel, devise, delai, procedure)
 SELECT 
-    'l1000001-0000-0000-0000-000000000001',
+    'b1000001-0000-0000-0000-000000000001',
     'URGENCE'::service_categorie,
     'Urgences 24h/24',
     'Service d''urgences médicales ouvert 24h/24 et 7j/7',
@@ -401,12 +401,12 @@ SELECT
     '1. Se présenter directement aux urgences
 2. Triage par l''infirmier
 3. Prise en charge selon gravité'
-WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'l1000001-0000-0000-0000-000000000001');
+WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'b1000001-0000-0000-0000-000000000001');
 
 -- Services Justice - Tribunal
 INSERT INTO services_proposes (lieu_id, categorie, nom_service, description, documents_requis, prix_officiel, devise, delai, procedure)
 SELECT 
-    'l1000001-0000-0000-0000-000000000013',
+    'b1000001-0000-0000-0000-000000000013',
     'JUSTICE'::service_categorie,
     'Casier Judiciaire',
     'Obtention d''un extrait du casier judiciaire',
@@ -419,12 +419,12 @@ SELECT
 3. Payer les frais légaux
 4. Attendre le délai de traitement
 5. Récupérer l''extrait'
-WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'l1000001-0000-0000-0000-000000000013');
+WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'b1000001-0000-0000-0000-000000000013');
 
 -- Services Éducation - UNIKIN
 INSERT INTO services_proposes (lieu_id, categorie, nom_service, description, documents_requis, prix_officiel, devise, delai, procedure)
 SELECT 
-    'l1000001-0000-0000-0000-000000000020',
+    'b1000001-0000-0000-0000-000000000020',
     'EDUCATION'::service_categorie,
     'Inscription Licence',
     'Inscription en première année de licence',
@@ -437,7 +437,7 @@ SELECT
 3. Payer les frais académiques
 4. Déposer le dossier au secrétariat
 5. Recevoir la carte d''étudiant'
-WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'l1000001-0000-0000-0000-000000000020');
+WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'b1000001-0000-0000-0000-000000000020');
 
 -- ============================================
 -- 8. AVIS EXEMPLES
@@ -445,13 +445,13 @@ WHERE EXISTS (SELECT 1 FROM lieux WHERE id = 'l1000001-0000-0000-0000-0000000000
 
 INSERT INTO avis_utilisateurs (lieu_id, user_name, note, commentaire, date_experience, approved)
 VALUES
-('l1000001-0000-0000-0000-000000000001', 'Jean M.', 4, 'Service d urgences efficace, bien que l attente soit parfois longue. Personnel compétent.', '2026-01-15', true),
-('l1000001-0000-0000-0000-000000000001', 'Marie K.', 3, 'Hôpital bien équipé mais manque de personnel. Prévoir beaucoup de temps.', '2026-01-20', true),
-('l1000001-0000-0000-0000-000000000002', 'Patrick L.', 5, 'Excellente clinique, personnel très professionnel et accueillant.', '2026-02-01', true),
-('l1000001-0000-0000-0000-000000000003', 'Chantal B.', 5, 'Monkole est vraiment au niveau international. Je recommande vivement.', '2026-02-10', true),
-('l1000001-0000-0000-0000-000000000011', 'Joseph T.', 4, 'J ai obtenu mon acte de naissance en 2 jours. Service correct.', '2026-01-25', true),
-('l1000001-0000-0000-0000-000000000011', 'Béatrice M.', 2, 'Trop de va-et-vient, on m a demandé de revenir plusieurs fois. Frustrant.', '2026-02-05', true),
-('l1000001-0000-0000-0000-000000000020', 'Didier K.', 4, 'Grande université avec beaucoup de ressources. Campus agréable.', '2025-12-10', true);
+('b1000001-0000-0000-0000-000000000001', 'Jean M.', 4, 'Service d urgences efficace, bien que l attente soit parfois longue. Personnel compétent.', '2026-01-15', true),
+('b1000001-0000-0000-0000-000000000001', 'Marie K.', 3, 'Hôpital bien équipé mais manque de personnel. Prévoir beaucoup de temps.', '2026-01-20', true),
+('b1000001-0000-0000-0000-000000000002', 'Patrick L.', 5, 'Excellente clinique, personnel très professionnel et accueillant.', '2026-02-01', true),
+('b1000001-0000-0000-0000-000000000003', 'Chantal B.', 5, 'Monkole est vraiment au niveau international. Je recommande vivement.', '2026-02-10', true),
+('b1000001-0000-0000-0000-000000000011', 'Joseph T.', 4, 'J ai obtenu mon acte de naissance en 2 jours. Service correct.', '2026-01-25', true),
+('b1000001-0000-0000-0000-000000000011', 'Béatrice M.', 2, 'Trop de va-et-vient, on m a demandé de revenir plusieurs fois. Frustrant.', '2026-02-05', true),
+('b1000001-0000-0000-0000-000000000020', 'Didier K.', 4, 'Grande université avec beaucoup de ressources. Campus agréable.', '2025-12-10', true);
 
 -- ============================================
 -- 9. ALERTES EXEMPLES
