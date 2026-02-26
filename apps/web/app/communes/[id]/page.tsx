@@ -170,18 +170,27 @@ export default function CommuneDetailPage() {
 
             {commune.lieux && commune.lieux.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {commune.lieux.map((lieu) => (
-                  <ServiceCard
-                    key={lieu.id}
-                    id={lieu.id}
-                    nom={lieu.nom}
-                    type={lieu.type}
-                    commune={commune.name}
-                    verified={lieu.verified}
-                    services={lieu.servicesProposed}
-                    avisCount={lieu._count.avis}
-                  />
-                ))}
+                {commune.lieux.map(
+                  (lieu: {
+                    id: string;
+                    nom: string;
+                    type: string;
+                    verified: boolean;
+                    servicesProposed: { nomService: string }[];
+                    _count: { avis: number };
+                  }) => (
+                    <ServiceCard
+                      key={lieu.id}
+                      id={lieu.id}
+                      nom={lieu.nom}
+                      type={lieu.type}
+                      commune={commune.name}
+                      verified={lieu.verified}
+                      services={lieu.servicesProposed}
+                      avisCount={lieu._count.avis}
+                    />
+                  ),
+                )}
               </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
