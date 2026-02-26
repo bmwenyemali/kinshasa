@@ -110,7 +110,7 @@ export default function LieuDetailPage() {
 
   // Group services by category
   const servicesByCategory: Record<string, typeof lieu.servicesProposed> = {};
-  lieu.servicesProposed.forEach((service) => {
+  lieu.servicesProposed.forEach((service: LieuService) => {
     if (!servicesByCategory[service.categorie]) {
       servicesByCategory[service.categorie] = [];
     }
