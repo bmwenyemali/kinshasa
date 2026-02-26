@@ -234,6 +234,7 @@ model Gouvernorat {
   email        String?  @db.VarChar(100)
   siteWeb      String?  @map("site_web") @db.VarChar(200)
   description  String?  @db.Text
+  biographie   String?  @db.Text
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -250,6 +251,7 @@ model Ministre {
   photoUrl       String?  @map("photo_url")
   telephone      String?  @db.VarChar(50)
   email          String?  @db.VarChar(100)
+  biographie     String?  @db.Text
   ordre          Int      @default(0)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
@@ -267,10 +269,25 @@ model Depute {
   photoUrl      String?  @map("photo_url")
   telephone     String?  @db.VarChar(50)
   email         String?  @db.VarChar(100)
+  biographie    String?  @db.Text
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("deputes")
+}
+
+model GouverneurHistorique {
+  id         String   @id @default(uuid())
+  nom        String   @db.VarChar(200)
+  photoUrl   String?  @map("photo_url")
+  dateDebut  String?  @map("date_debut") @db.VarChar(50)
+  dateFin    String?  @map("date_fin") @db.VarChar(50)
+  biographie String?  @db.Text
+  ordre      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("gouverneurs_historiques")
 }
 
 model Projet {

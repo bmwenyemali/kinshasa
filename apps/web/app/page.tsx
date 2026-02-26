@@ -110,7 +110,7 @@ export default function HomePage() {
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary-light/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
 
-          <div className="relative container mx-auto max-w-5xl px-4 py-16 md:py-24">
+          <div className="relative container mx-auto max-w-6xl px-4 py-16 md:py-24">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-5 h-5 text-secondary" />
               <span className="text-sm font-medium text-white/70">
@@ -200,7 +200,7 @@ export default function HomePage() {
 
         {/* Categories */}
         <section className="py-14 px-4">
-          <div className="container mx-auto max-w-5xl">
+          <div className="container mx-auto max-w-6xl">
             <div className="flex items-end justify-between mb-8">
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">
@@ -238,7 +238,7 @@ export default function HomePage() {
 
         {/* Featured Lieux */}
         <section className="py-14 px-4 bg-white">
-          <div className="container mx-auto max-w-5xl">
+          <div className="container mx-auto max-w-6xl">
             <div className="flex items-end justify-between mb-8">
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold text-foreground">
@@ -290,7 +290,7 @@ export default function HomePage() {
 
         {/* Map CTA */}
         <section className="py-14 px-4">
-          <div className="container mx-auto max-w-5xl">
+          <div className="container mx-auto max-w-6xl">
             <div className="relative bg-gradient-to-br from-primary to-primary-dark rounded-3xl p-8 md:p-14 overflow-hidden">
               {/* Decorative circles */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
@@ -332,7 +332,7 @@ export default function HomePage() {
 
         {/* Quick Stats */}
         <section className="py-14 px-4 bg-foreground text-white">
-          <div className="container mx-auto max-w-5xl">
+          <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               {[
                 { value: "24", label: "Communes" },

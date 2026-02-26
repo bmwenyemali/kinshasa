@@ -90,4 +90,30 @@ export const villeRouter = router({
         where: { id: input.id },
       });
     }),
+
+  // Get historical governors
+  getGouverneursHistoriques: publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.gouverneurHistorique.findMany({
+      orderBy: { ordre: "asc" },
+    });
+  }),
+
+  // Get single ministre by id
+  getMinistreById: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.ministre.findUnique({
+        where: { id: input.id },
+        include: { gouvernorat: true },
+      });
+    }),
+
+  // Get single depute by id
+  getDeputeById: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.depute.findUnique({
+        where: { id: input.id },
+      });
+    }),
 });

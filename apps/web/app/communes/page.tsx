@@ -53,7 +53,7 @@ export default function CommunesPage() {
           <div className="absolute inset-0 hero-pattern" />
           <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
 
-          <div className="relative container mx-auto max-w-5xl px-4 py-14">
+          <div className="relative container mx-auto max-w-6xl px-4 py-14">
             <h1 className="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight">
               Communes de <span className="text-secondary">Kinshasa</span>
             </h1>
@@ -106,7 +106,7 @@ export default function CommunesPage() {
 
         {/* Search + Grid */}
         <section className="py-8 px-4">
-          <div className="container mx-auto max-w-5xl">
+          <div className="container mx-auto max-w-6xl">
             {/* Search */}
             <div className="mb-8 -mt-6">
               <div className="relative max-w-md mx-auto md:mx-0">

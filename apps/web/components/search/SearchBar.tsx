@@ -123,7 +123,7 @@ export function SearchBar({
             onBlur={() => setIsFocused(false)}
             placeholder={placeholder}
             autoFocus={autoFocus}
-            className={`w-full pl-12 pr-12 rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${sizeClasses[size]}`}
+            className={`w-full pl-12 pr-12 rounded-xl border border-border bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${sizeClasses[size]}`}
           />
           {query && (
             <button

@@ -148,7 +148,7 @@ export default function CommuneDetailPage() {
             <div className="absolute top-10 right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
           </div>
-          <div className="container mx-auto max-w-5xl relative z-10">
+          <div className="container mx-auto max-w-6xl relative z-10">
             <button
               onClick={() => router.back()}
               className="flex items-center gap-2 text-white/70 hover:text-white mb-5 transition-colors text-sm"
@@ -212,7 +212,7 @@ export default function CommuneDetailPage() {
 
         {/* Tabs */}
         <div className="bg-white/80 backdrop-blur-lg border-b border-border sticky top-0 z-10">
-          <div className="container mx-auto max-w-5xl flex gap-1 overflow-x-auto px-4">
+          <div className="container mx-auto max-w-6xl flex gap-1 overflow-x-auto px-4">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -241,7 +241,7 @@ export default function CommuneDetailPage() {
         </div>
 
         {/* Tab Content */}
-        <div className="container mx-auto max-w-5xl py-8 px-4">
+        <div className="container mx-auto max-w-6xl py-8 px-4">
           {/* === OVERVIEW TAB === */}
           {activeTab === "overview" && (
             <div className="space-y-8">

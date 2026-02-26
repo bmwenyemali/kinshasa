@@ -153,6 +153,108 @@ export const serviceRouter = router({
     return result;
   }),
 
+  // Get detailed category info with lieux and services
+  getCategoryDetails: publicProcedure
+    .input(
+      z.object({
+        categorie: serviceCategorieEnum,
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // Get all services in this category with lieux
+      const services = await ctx.prisma.servicePropose.findMany({
+        where: {
+          categorie: input.categorie,
+          actif: true,
+        },
+        include: {
+          lieu: {
+            include: {
+              commune: { select: { id: true, name: true } },
+              quartier: { select: { name: true } },
+            },
+          },
+        },
+        orderBy: { nomService: "asc" },
+      });
+
+      // Get unique lieux offering services in this category
+      const lieuxMap = new Map<string, (typeof services)[0]["lieu"]>();
+      for (const s of services) {
+        if (s.lieu && !lieuxMap.has(s.lieu.id)) {
+          lieuxMap.set(s.lieu.id, s.lieu);
+        }
+      }
+
+      // Get unique service names with counts
+      const serviceNames = new Map<
+        string,
+        { count: number; avgPrice: number | null; docs: string[] }
+      >();
+      for (const s of services) {
+        const existing = serviceNames.get(s.nomService);
+        if (existing) {
+          existing.count++;
+          if (s.prixOfficiel) {
+            existing.avgPrice = existing.avgPrice
+              ? (existing.avgPrice + Number(s.prixOfficiel)) / 2
+              : Number(s.prixOfficiel);
+          }
+          for (const d of s.documentsRequis) {
+            if (!existing.docs.includes(d)) existing.docs.push(d);
+          }
+        } else {
+          serviceNames.set(s.nomService, {
+            count: 1,
+            avgPrice: s.prixOfficiel ? Number(s.prixOfficiel) : null,
+            docs: [...s.documentsRequis],
+          });
+        }
+      }
+
+      // Get communes count serving this category
+      const communeIds = new Set<string>();
+      for (const l of lieuxMap.values()) {
+        if (l.communeId) communeIds.add(l.communeId);
+      }
+
+      return {
+        totalServices: services.length,
+        totalLieux: lieuxMap.size,
+        totalCommunes: communeIds.size,
+        lieux: Array.from(lieuxMap.values()).map((l) => ({
+          id: l.id,
+          nom: l.nom,
+          type: l.type,
+          commune: l.commune?.name,
+          telephone: l.telephone,
+          adresse: l.adresse,
+          verified: l.verified,
+        })),
+        services: Array.from(serviceNames.entries())
+          .map(([name, data]) => ({
+            name,
+            count: data.count,
+            avgPrice: data.avgPrice,
+            docs: data.docs,
+          }))
+          .sort((a, b) => b.count - a.count),
+        allServices: services.map((s) => ({
+          id: s.id,
+          nomService: s.nomService,
+          description: s.description,
+          documentsRequis: s.documentsRequis,
+          prixOfficiel: s.prixOfficiel ? Number(s.prixOfficiel) : null,
+          devise: s.devise,
+          delai: s.delai,
+          procedure: s.procedure,
+          lieuNom: s.lieu?.nom,
+          lieuId: s.lieu?.id,
+          commune: s.lieu?.commune?.name,
+        })),
+      };
+    }),
+
   // Get popular/common services
   getPopular: publicProcedure.query(async ({ ctx }) => {
     // Get the most common services by count

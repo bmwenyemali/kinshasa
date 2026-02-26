@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -19,8 +19,8 @@ import {
 import { Header, Footer } from "@/components/layout/Header";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { trpc, type LieuSearchResult, type FeaturedLieu } from "@/lib/trpc";
-import { Card, Badge, Spinner } from "@kinservices/ui";
+import { trpc, type FeaturedLieu } from "@/lib/trpc";
+import { Spinner } from "@kinservices/ui";
 import { ServiceCategorie } from "@kinservices/api";
 import { SERVICE_CATEGORIE_LABELS } from "@kinservices/ui";
 
@@ -63,23 +63,7 @@ const categoryGradients: Record<ServiceCategorie, string> = {
   SECURITE: "from-indigo-500 to-indigo-600",
 };
 
-const categoryBgColors: Record<ServiceCategorie, string> = {
-  ETAT_CIVIL: "bg-blue-50 border-blue-100",
-  SANTE: "bg-red-50 border-red-100",
-  JUSTICE: "bg-purple-50 border-purple-100",
-  EDUCATION: "bg-emerald-50 border-emerald-100",
-  IMPOTS: "bg-amber-50 border-amber-100",
-  URGENCE: "bg-rose-50 border-rose-100",
-  SOCIAL: "bg-pink-50 border-pink-100",
-  TRANSPORT: "bg-orange-50 border-orange-100",
-  AUTRE: "bg-gray-50 border-gray-100",
-  SECURITE: "bg-indigo-50 border-indigo-100",
-};
-
 export default function ServicesPage() {
-  const [selectedCategory, setSelectedCategory] =
-    useState<ServiceCategorie | null>(null);
-
   const { data: categoryCounts } = trpc.services.getCategoryCounts.useQuery();
 
   return (
@@ -92,7 +76,7 @@ export default function ServicesPage() {
           <div className="absolute inset-0 hero-pattern" />
           <div className="absolute top-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
 
-          <div className="relative container mx-auto max-w-5xl px-4 py-14">
+          <div className="relative container mx-auto max-w-6xl px-4 py-14">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="w-4 h-4 text-secondary" />
               <span className="text-sm font-medium text-white/50">
@@ -121,7 +105,7 @@ export default function ServicesPage() {
 
         {/* Categories Grid */}
         <section className="py-10 px-4">
-          <div className="container mx-auto max-w-5xl">
+          <div className="container mx-auto max-w-6xl">
             <h2 className="text-xl font-bold text-foreground mb-6">
               Catégories de Services
             </h2>
@@ -129,25 +113,11 @@ export default function ServicesPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {Object.entries(SERVICE_CATEGORIE_LABELS).map(([cat, label]) => {
                 const count = categoryCounts?.[cat] ?? 0;
-                const isSelected = selectedCategory === cat;
                 return (
-                  <button
+                  <Link
                     key={cat}
-                    onClick={() =>
-                      setSelectedCategory(
-                        selectedCategory === cat
-                          ? null
-                          : (cat as ServiceCategorie),
-                      )
-                    }
-                    className={`
-                      card-hover relative p-5 rounded-2xl border transition-all text-left
-                      ${
-                        isSelected
-                          ? `${categoryBgColors[cat as ServiceCategorie]} shadow-md`
-                          : "border-border/50 bg-white hover:border-primary/30"
-                      }
-                    `}
+                    href={`/services/${cat.toLowerCase()}`}
+                    className="card-hover relative p-5 rounded-2xl border transition-all text-left border-border/50 bg-white hover:border-primary/30 hover:shadow-md"
                   >
                     <div
                       className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-br ${
@@ -162,93 +132,34 @@ export default function ServicesPage() {
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
                       {categoryDescriptions[cat as ServiceCategorie]}
                     </p>
+                    <div className="flex items-center gap-1 mt-2 text-primary text-xs font-medium">
+                      Voir les détails <ChevronRight className="w-3 h-3" />
+                    </div>
                     {count > 0 && (
                       <span className="absolute top-3 right-3 text-xs bg-primary/10 text-primary font-bold px-2.5 py-0.5 rounded-full">
                         {count}
                       </span>
                     )}
-                  </button>
+                  </Link>
                 );
               })}
             </div>
           </div>
         </section>
 
-        {/* Services by category */}
-        {selectedCategory && (
-          <section className="py-10 px-4 bg-white border-t border-border/50">
-            <div className="container mx-auto max-w-5xl animate-fade-in">
-              <ServicesList category={selectedCategory} />
-            </div>
-          </section>
-        )}
-
         {/* Popular services */}
-        {!selectedCategory && (
-          <section className="py-10 px-4 bg-white border-t border-border/50">
-            <div className="container mx-auto max-w-5xl">
-              <h2 className="text-xl font-bold text-foreground mb-6">
-                Services Les Plus Demandés
-              </h2>
-              <PopularServices />
-            </div>
-          </section>
-        )}
+        <section className="py-10 px-4 bg-white border-t border-border/50">
+          <div className="container mx-auto max-w-6xl">
+            <h2 className="text-xl font-bold text-foreground mb-6">
+              Services Les Plus Demandés
+            </h2>
+            <PopularServices />
+          </div>
+        </section>
       </main>
 
       <Footer />
     </div>
-  );
-}
-
-function ServicesList({ category }: { category: ServiceCategorie }) {
-  const { data: lieux, isLoading } = trpc.lieux.search.useQuery({
-    categorie: category,
-    verified: true,
-    limit: 20,
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!lieux?.items || lieux.items.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">
-          Aucun lieu trouvé pour cette catégorie
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-foreground">
-          {SERVICE_CATEGORIE_LABELS[category]}
-        </h2>
-        <Badge variant="outline">{lieux.items.length} résultat(s)</Badge>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {lieux.items.map((lieu: LieuSearchResult) => (
-          <ServiceCard
-            key={lieu.id}
-            id={lieu.id}
-            nom={lieu.nom}
-            type={lieu.type}
-            commune={lieu.commune?.name}
-            verified={lieu.verified}
-            services={lieu.servicesProposed}
-            avisCount={lieu._count?.avis || 0}
-          />
-        ))}
-      </div>
-    </>
   );
 }
 

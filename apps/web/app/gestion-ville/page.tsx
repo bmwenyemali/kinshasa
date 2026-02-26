@@ -20,15 +20,145 @@ import {
   FolderKanban,
   Search,
   ExternalLink,
+  BookOpen,
+  X,
+  History,
+  Landmark,
+  Shield,
+  Scale,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 
-type Tab = "gouvernorat" | "assemblee" | "projets";
+type Tab = "gouvernorat" | "assemblee" | "projets" | "histoire";
+
+// Biography modal component
+function BiographyModal({
+  isOpen,
+  onClose,
+  person,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  person: {
+    nom: string;
+    photoUrl?: string | null;
+    role: string;
+    biographie?: string | null;
+    telephone?: string | null;
+    email?: string | null;
+    parti?: string | null;
+    circonscription?: string | null;
+  } | null;
+}) {
+  if (!isOpen || !person) return null;
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-white border-b border-border p-4 flex items-center justify-between rounded-t-2xl">
+          <h3 className="font-bold text-lg text-foreground">Biographie</h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-6">
+            {person.photoUrl ? (
+              <img
+                src={person.photoUrl}
+                alt={person.nom}
+                className="w-20 h-20 rounded-2xl object-cover shadow-lg"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                {person.nom?.charAt(0) || "?"}
+              </div>
+            )}
+            <div>
+              <h4 className="text-xl font-bold text-foreground">
+                {person.nom}
+              </h4>
+              <p className="text-sm text-primary font-medium">{person.role}</p>
+              {person.parti && (
+                <span className="text-xs text-muted-foreground">
+                  {person.parti}
+                </span>
+              )}
+              {person.circonscription && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <MapPin className="w-3 h-3" /> {person.circonscription}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {person.biographie ? (
+            <div className="prose prose-sm max-w-none">
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                {person.biographie}
+              </p>
+            </div>
+          ) : (
+            <div className="text-center py-8 bg-gray-50 rounded-xl">
+              <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Biographie non encore disponible.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Les informations seront ajoutées prochainement.
+              </p>
+            </div>
+          )}
+
+          {(person.telephone || person.email) && (
+            <div className="mt-6 pt-4 border-t border-border flex flex-wrap gap-3">
+              {person.telephone && (
+                <a
+                  href={`tel:${person.telephone}`}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  <Phone className="w-4 h-4" /> {person.telephone}
+                </a>
+              )}
+              {person.email && (
+                <a
+                  href={`mailto:${person.email}`}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                >
+                  <Mail className="w-4 h-4" /> {person.email}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function GestionVillePage() {
   const [activeTab, setActiveTab] = useState<Tab>("gouvernorat");
   const [searchDepute, setSearchDepute] = useState("");
   const [projetFilter, setProjetFilter] = useState("");
+  const [bioModal, setBioModal] = useState<{
+    nom: string;
+    photoUrl?: string | null;
+    role: string;
+    biographie?: string | null;
+    telephone?: string | null;
+    email?: string | null;
+    parti?: string | null;
+    circonscription?: string | null;
+  } | null>(null);
 
   const { data: gouvernorat, isLoading: loadingGouv } =
     trpc.ville.getGouvernorat.useQuery();
@@ -38,6 +168,8 @@ export default function GestionVillePage() {
     trpc.ville.getProjets.useQuery({
       statut: projetFilter || undefined,
     });
+  const { data: gouverneursHistoriques, isLoading: loadingHistoire } =
+    trpc.ville.getGouverneursHistoriques.useQuery();
 
   const tabs = [
     {
@@ -58,6 +190,12 @@ export default function GestionVillePage() {
       icon: FolderKanban,
       description: "Projets de développement",
     },
+    {
+      id: "histoire" as Tab,
+      label: "Histoire",
+      icon: History,
+      description: "Histoire de la ville-province",
+    },
   ];
 
   const statutColors: Record<string, string> = {
@@ -77,6 +215,13 @@ export default function GestionVillePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-gray-50/50">
       <Header />
+
+      {/* Biography Modal */}
+      <BiographyModal
+        isOpen={!!bioModal}
+        onClose={() => setBioModal(null)}
+        person={bioModal}
+      />
 
       {/* Hero section */}
       <section className="relative bg-gradient-to-r from-primary to-primary-dark text-white py-16 px-4">
@@ -130,7 +275,19 @@ export default function GestionVillePage() {
             ) : gouvernorat ? (
               <>
                 {/* Governor card */}
-                <div className="bg-white rounded-2xl shadow-lg border border-border overflow-hidden">
+                <div
+                  className="bg-white rounded-2xl shadow-lg border border-border overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
+                  onClick={() =>
+                    setBioModal({
+                      nom: gouvernorat.gouverneur,
+                      photoUrl: gouvernorat.photoUrl,
+                      role: "Gouverneur de la Ville-Province de Kinshasa",
+                      biographie: gouvernorat.biographie,
+                      telephone: gouvernorat.telephone,
+                      email: gouvernorat.email,
+                    })
+                  }
+                >
                   <div className="bg-gradient-to-r from-primary/10 to-amber-50 p-8">
                     <div className="flex flex-col md:flex-row items-center gap-6">
                       {gouvernorat.photoUrl ? (
@@ -194,6 +351,12 @@ export default function GestionVillePage() {
                             </span>
                           )}
                         </div>
+                        <div className="mt-3">
+                          <span className="text-xs text-primary font-medium flex items-center gap-1">
+                            <BookOpen className="w-3.5 h-3.5" /> Cliquez pour
+                            voir la biographie
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -213,7 +376,17 @@ export default function GestionVillePage() {
                       {gouvernorat.ministres.map((ministre) => (
                         <div
                           key={ministre.id}
-                          className="bg-white rounded-xl border border-border p-4 hover:shadow-md transition-shadow"
+                          className="bg-white rounded-xl border border-border p-4 hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() =>
+                            setBioModal({
+                              nom: ministre.nom,
+                              photoUrl: ministre.photoUrl,
+                              role: `Ministre Provincial — ${ministre.portefeuille}`,
+                              biographie: (ministre as any).biographie,
+                              telephone: ministre.telephone,
+                              email: ministre.email,
+                            })
+                          }
                         >
                           <div className="flex items-start gap-3">
                             {ministre.photoUrl ? (
@@ -261,6 +434,106 @@ export default function GestionVillePage() {
                     </div>
                   </div>
                 )}
+
+                {/* Gouvernorat Details Section */}
+                <div className="bg-white rounded-2xl border border-border p-6">
+                  <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                    <Landmark className="w-5 h-5 text-primary" />
+                    Le Gouvernorat de Kinshasa
+                  </h3>
+                  <div className="prose prose-sm max-w-none text-muted-foreground space-y-4">
+                    <p>
+                      Le{" "}
+                      <strong>
+                        Gouvernorat de la ville-province de Kinshasa
+                      </strong>{" "}
+                      est l&apos;organe exécutif provincial dirigé par le
+                      Gouverneur, assisté d&apos;un Vice-Gouverneur. Il est
+                      responsable de la gestion administrative, politique et
+                      économique de Kinshasa, la capitale de la République
+                      Démocratique du Congo.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-blue-50 rounded-xl p-4">
+                        <h4 className="font-semibold text-blue-800 flex items-center gap-2 mb-2">
+                          <Shield className="w-4 h-4" /> Missions principales
+                        </h4>
+                        <ul className="text-sm text-blue-900 space-y-1">
+                          <li>• Assurer l&apos;ordre public et la sécurité</li>
+                          <li>• Coordonner les services provinciaux</li>
+                          <li>
+                            • Exécuter les décisions de l&apos;Assemblée
+                            provinciale
+                          </li>
+                          <li>
+                            • Représenter la province auprès du pouvoir central
+                          </li>
+                          <li>
+                            • Gérer les finances et ressources de la province
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="bg-emerald-50 rounded-xl p-4">
+                        <h4 className="font-semibold text-emerald-800 flex items-center gap-2 mb-2">
+                          <Scale className="w-4 h-4" /> Cadre juridique
+                        </h4>
+                        <ul className="text-sm text-emerald-900 space-y-1">
+                          <li>
+                            • Constitution de la RDC (2006, révisée en 2011)
+                          </li>
+                          <li>
+                            • Loi organique n° 08/016 sur les entités
+                            territoriales
+                          </li>
+                          <li>
+                            • Loi n° 06/006 portant organisation des élections
+                          </li>
+                          <li>
+                            • Le Gouverneur est élu par les députés provinciaux
+                          </li>
+                          <li>• Mandat de 5 ans, renouvelable une fois</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="bg-amber-50 rounded-xl p-4">
+                      <h4 className="font-semibold text-amber-800 flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4" /> Kinshasa en chiffres
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                        <div>
+                          <p className="text-2xl font-bold text-amber-700">
+                            24
+                          </p>
+                          <p className="text-xs text-amber-800">Communes</p>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-amber-700">
+                            ~17M
+                          </p>
+                          <p className="text-xs text-amber-800">
+                            Habitants (est.)
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-amber-700">
+                            9 965
+                          </p>
+                          <p className="text-xs text-amber-800">
+                            km² superficie
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold text-amber-700">
+                            35
+                          </p>
+                          <p className="text-xs text-amber-800">
+                            Zones de santé
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             ) : (
               <div className="text-center py-20">
@@ -305,7 +578,19 @@ export default function GestionVillePage() {
                   {deputes.items.map((depute) => (
                     <div
                       key={depute.id}
-                      className="bg-white rounded-xl border border-border p-4 hover:shadow-md transition-shadow"
+                      className="bg-white rounded-xl border border-border p-4 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() =>
+                        setBioModal({
+                          nom: depute.nom,
+                          photoUrl: depute.photoUrl,
+                          role: "Député Provincial",
+                          biographie: (depute as any).biographie,
+                          telephone: depute.telephone,
+                          email: depute.email,
+                          parti: depute.parti,
+                          circonscription: depute.circonscription,
+                        })
+                      }
                     >
                       <div className="flex items-start gap-3">
                         {depute.photoUrl ? (
@@ -484,6 +769,166 @@ export default function GestionVillePage() {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* HISTOIRE TAB */}
+        {activeTab === "histoire" && (
+          <div className="space-y-8">
+            {/* Histoire narrative */}
+            <div className="bg-white rounded-2xl border border-border p-6">
+              <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <History className="w-6 h-6 text-primary" />
+                Histoire de la Ville-Province de Kinshasa
+              </h2>
+              <div className="prose prose-sm max-w-none text-muted-foreground space-y-3">
+                <p>
+                  <strong>Kinshasa</strong>, anciennement <em>Léopoldville</em>,
+                  est la capitale et la plus grande ville de la République
+                  Démocratique du Congo. Fondée en 1881 par l&apos;explorateur
+                  Henry Morton Stanley sous le nom de <em>Léopoldville</em> en
+                  l&apos;honneur du roi Léopold II de Belgique, la ville est
+                  située sur la rive gauche du fleuve Congo, face à Brazzaville.
+                </p>
+                <p>
+                  La ville a connu plusieurs appellations et transformations
+                  administratives. De simple poste colonial, elle est devenue
+                  chef-lieu de la colonie du Congo belge, puis capitale du pays
+                  à l&apos;indépendance le 30 juin 1960. Elle a été renommée{" "}
+                  <strong>Kinshasa</strong> le 1er octobre 1966, d&apos;après le
+                  nom d&apos;un ancien village situé sur le site,{" "}
+                  <em>Kinchassa</em>.
+                </p>
+                <p>
+                  En tant que ville-province, Kinshasa jouit d&apos;un statut
+                  particulier : elle est à la fois une ville et une province.
+                  Elle est dirigée par un <strong>Gouverneur</strong> élu par
+                  les députés provinciaux, et dispose de sa propre{" "}
+                  <strong>Assemblée provinciale</strong>.
+                </p>
+                <p>
+                  Avec une population estimée à plus de 17 millions
+                  d&apos;habitants, Kinshasa est la troisième plus grande
+                  agglomération d&apos;Afrique et la plus grande ville
+                  francophone du monde. Ses 24 communes couvrent une superficie
+                  de 9 965 km².
+                </p>
+                <h3 className="text-lg font-bold text-foreground mt-6">
+                  Dates clés
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[
+                    {
+                      date: "1881",
+                      event: "Fondation de Léopoldville par H.M. Stanley",
+                    },
+                    {
+                      date: "1923",
+                      event: "Léopoldville devient chef-lieu du Congo belge",
+                    },
+                    {
+                      date: "1960",
+                      event: "Indépendance — capitale de la Rép. du Congo",
+                    },
+                    { date: "1966", event: "Renommée Kinshasa" },
+                    {
+                      date: "1971-1997",
+                      event: "Capitale du Zaïre sous Mobutu",
+                    },
+                    { date: "1997", event: "Redevient capitale de la RDC" },
+                    {
+                      date: "2006",
+                      event: "Statut de ville-province dans la Constitution",
+                    },
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 bg-gray-50 rounded-lg p-3"
+                    >
+                      <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        {item.date}
+                      </span>
+                      <span className="text-sm text-foreground">
+                        {item.event}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Historical governors */}
+            <div className="bg-white rounded-2xl border border-border p-6">
+              <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-500" />
+                Gouverneurs historiques de Kinshasa
+              </h2>
+              {loadingHistoire ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                </div>
+              ) : gouverneursHistoriques &&
+                gouverneursHistoriques.length > 0 ? (
+                <div className="relative">
+                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-primary/20" />
+                  <div className="space-y-4">
+                    {gouverneursHistoriques.map((g, i) => (
+                      <div key={g.id} className="relative pl-14">
+                        <div className="absolute left-4 top-3 w-4 h-4 rounded-full bg-primary border-2 border-white shadow" />
+                        <div
+                          className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() =>
+                            setBioModal({
+                              nom: g.nom,
+                              photoUrl: g.photoUrl,
+                              role: `Gouverneur de Kinshasa (${g.dateDebut || "?"} — ${g.dateFin || "?"})`,
+                              biographie: g.biographie,
+                              telephone: null,
+                              email: null,
+                            })
+                          }
+                        >
+                          <div className="flex items-start gap-3">
+                            {g.photoUrl ? (
+                              <img
+                                src={g.photoUrl}
+                                alt={g.nom}
+                                className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 font-bold flex-shrink-0">
+                                {g.nom?.charAt(0)}
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-foreground">
+                                {g.nom}
+                              </h4>
+                              <p className="text-xs text-primary font-medium">
+                                {g.dateDebut} — {g.dateFin || "en fonction"}
+                              </p>
+                              {g.biographie && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {g.biographie}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-10 bg-gray-50 rounded-xl">
+                  <History className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Les gouverneurs historiques seront ajoutés prochainement par
+                    l&apos;administrateur.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
