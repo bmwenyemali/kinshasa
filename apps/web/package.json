@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate --schema=../../packages/database/prisma/schema.prisma && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -14,6 +14,7 @@
     "@kinservices/api": "workspace:*",
     "@kinservices/database": "workspace:*",
     "@kinservices/ui": "workspace:*",
+    "@prisma/client": "^5.7.0",
     "@supabase/supabase-js": "^2.39.0",
     "@tanstack/react-query": "^5.17.0",
     "@trpc/client": "^11.0.0",
@@ -38,6 +39,7 @@
     "eslint": "^8.56.0",
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.32",
+    "prisma": "^5.7.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.7.2"
   }

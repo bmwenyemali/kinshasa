@@ -1,14 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone",
-  outputFileTracingRoot: require("path").join(__dirname, "../../"),
   transpilePackages: [
     "@kinservices/api",
     "@kinservices/database",
     "@kinservices/ui",
   ],
-  serverExternalPackages: ["@prisma/client", "prisma"],
   images: {
     remotePatterns: [
       {
