@@ -258,6 +258,31 @@ export const adminRouter = router({
       return ctx.prisma.ministre.create({ data: input });
     }),
 
+  // Update ministre
+  updateMinistre: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        nom: z.string().optional(),
+        portefeuille: z.string().optional(),
+        photoUrl: z.string().optional(),
+        telephone: z.string().optional(),
+        email: z.string().optional(),
+        ordre: z.number().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.ministre.update({ where: { id }, data: data as any });
+    }),
+
+  // Delete ministre
+  deleteMinistre: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.ministre.delete({ where: { id: input.id } });
+    }),
+
   // CRUD for deputes
   createDepute: publicProcedure
     .input(
@@ -272,6 +297,31 @@ export const adminRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.prisma.depute.create({ data: input });
+    }),
+
+  // Update depute
+  updateDepute: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        nom: z.string().optional(),
+        parti: z.string().optional(),
+        circonscription: z.string().optional(),
+        photoUrl: z.string().optional(),
+        telephone: z.string().optional(),
+        email: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.depute.update({ where: { id }, data: data as any });
+    }),
+
+  // Delete depute
+  deleteDepute: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.depute.delete({ where: { id: input.id } });
     }),
 
   // CRUD for projets

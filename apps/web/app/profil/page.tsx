@@ -14,6 +14,7 @@ import {
   Shield,
   Calendar,
 } from "lucide-react";
+import { CloudinaryUpload } from "@/components/ui/CloudinaryUpload";
 import { useRouter } from "next/navigation";
 
 interface UserData {
@@ -30,7 +31,6 @@ const AGE_RANGES = ["18-25", "26-35", "36-45", "46-55", "56-65", "65+"];
 const SEXE_OPTIONS = [
   { value: "M", label: "Masculin" },
   { value: "F", label: "Féminin" },
-  { value: "AUTRE", label: "Autre" },
 ];
 
 export default function ProfilPage() {
@@ -84,6 +84,7 @@ export default function ProfilPage() {
           "kinservices_user",
           JSON.stringify({ ...parsed, ...data }),
         );
+        window.dispatchEvent(new Event("kinservices_auth_change"));
       }
       setTimeout(() => setSaved(false), 3000);
     },
@@ -189,20 +190,14 @@ export default function ProfilPage() {
             )}
 
             <div className="space-y-4">
-              {/* Photo URL */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  <Camera className="w-4 h-4 inline mr-1" />
-                  URL de la photo
-                </label>
-                <input
-                  type="url"
-                  value={photoUrl}
-                  onChange={(e) => setPhotoUrl(e.target.value)}
-                  placeholder="https://exemple.com/photo.jpg"
-                  className="w-full px-4 py-2.5 rounded-xl border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
-                />
-              </div>
+              {/* Photo upload */}
+              <CloudinaryUpload
+                value={photoUrl}
+                onChange={(url) => setPhotoUrl(url)}
+                label="Photo de profil"
+                size="md"
+                shape="square"
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

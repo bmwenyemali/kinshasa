@@ -17,6 +17,7 @@ export default function LoginPage() {
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
       localStorage.setItem("kinservices_user", JSON.stringify(data));
+      window.dispatchEvent(new Event("kinservices_auth_change"));
       router.push("/profil");
     },
     onError: (err) => {

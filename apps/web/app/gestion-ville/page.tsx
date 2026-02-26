@@ -133,9 +133,17 @@ export default function GestionVillePage() {
                 <div className="bg-white rounded-2xl shadow-lg border border-border overflow-hidden">
                   <div className="bg-gradient-to-r from-primary/10 to-amber-50 p-8">
                     <div className="flex flex-col md:flex-row items-center gap-6">
-                      <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-5xl font-bold shadow-xl">
-                        {gouvernorat.gouverneur?.charAt(0) || "G"}
-                      </div>
+                      {gouvernorat.photoUrl ? (
+                        <img
+                          src={gouvernorat.photoUrl}
+                          alt={gouvernorat.gouverneur}
+                          className="w-32 h-32 rounded-2xl object-cover shadow-xl"
+                        />
+                      ) : (
+                        <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white text-5xl font-bold shadow-xl">
+                          {gouvernorat.gouverneur?.charAt(0) || "G"}
+                        </div>
+                      )}
                       <div className="text-center md:text-left flex-1">
                         <p className="text-sm font-medium text-primary uppercase tracking-wider mb-1">
                           Gouverneur de la Ville-Province de Kinshasa
@@ -208,9 +216,17 @@ export default function GestionVillePage() {
                           className="bg-white rounded-xl border border-border p-4 hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-700 font-bold text-lg flex-shrink-0">
-                              {ministre.nom?.charAt(0) || "M"}
-                            </div>
+                            {ministre.photoUrl ? (
+                              <img
+                                src={ministre.photoUrl}
+                                alt={ministre.nom}
+                                className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-700 font-bold text-lg flex-shrink-0">
+                                {ministre.nom?.charAt(0) || "M"}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-foreground text-sm leading-tight">
                                 {ministre.nom}
@@ -292,9 +308,17 @@ export default function GestionVillePage() {
                       className="bg-white rounded-xl border border-border p-4 hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center text-emerald-700 font-bold text-lg flex-shrink-0">
-                          {depute.nom?.charAt(0) || "D"}
-                        </div>
+                        {depute.photoUrl ? (
+                          <img
+                            src={depute.photoUrl}
+                            alt={depute.nom}
+                            className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center text-emerald-700 font-bold text-lg flex-shrink-0">
+                            {depute.nom?.charAt(0) || "D"}
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-foreground text-sm">
                             {depute.nom}

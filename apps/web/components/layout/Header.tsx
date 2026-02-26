@@ -26,14 +26,32 @@ export function Header() {
   const pathname = usePathname();
 
   React.useEffect(() => {
-    const stored = localStorage.getItem("kinservices_user");
-    if (stored) {
-      setLoggedIn(true);
-      try {
-        const parsed = JSON.parse(stored);
-        setIsAdmin(parsed.role === "ADMINISTRATEUR");
-      } catch {}
-    }
+    const checkAuth = () => {
+      const stored = localStorage.getItem("kinservices_user");
+      if (stored) {
+        setLoggedIn(true);
+        try {
+          const parsed = JSON.parse(stored);
+          setIsAdmin(parsed.role === "ADMINISTRATEUR");
+        } catch {}
+      } else {
+        setLoggedIn(false);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAuth();
+
+    // Re-check when localStorage changes (e.g. login in another tab or profile update)
+    window.addEventListener("storage", checkAuth);
+
+    // Also listen for custom event dispatched after login/role update in same tab
+    window.addEventListener("kinservices_auth_change", checkAuth);
+
+    return () => {
+      window.removeEventListener("storage", checkAuth);
+      window.removeEventListener("kinservices_auth_change", checkAuth);
+    };
   }, []);
 
   const navLinks = [
