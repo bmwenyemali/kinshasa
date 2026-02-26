@@ -136,15 +136,17 @@ export default function CommuneDetailPage() {
                 Quartiers ({commune.quartiers.length})
               </h2>
               <div className="flex flex-wrap gap-2">
-                {commune.quartiers.map((quartier) => (
-                  <Badge
-                    key={quartier.id}
-                    variant="default"
-                    className="text-sm"
-                  >
-                    {quartier.name}
-                  </Badge>
-                ))}
+                {commune.quartiers.map(
+                  (quartier: { id: string; name: string }) => (
+                    <Badge
+                      key={quartier.id}
+                      variant="default"
+                      className="text-sm"
+                    >
+                      {quartier.name}
+                    </Badge>
+                  ),
+                )}
               </div>
             </div>
           </section>
