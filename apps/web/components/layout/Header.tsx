@@ -170,12 +170,14 @@ export function Footer() {
                 height={40}
                 className="w-9 h-9 rounded-xl"
               />
-              <span className="font-bold text-lg tracking-tight">Kin Services</span>
+              <span className="font-bold text-lg tracking-tight">
+                Kin Services
+              </span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-md">
-              Trouvez facilement les services publics à Kinshasa : communes, hôpitaux,
-              administrations. Consultez les prix officiels, les documents requis et
-              obtenez l&apos;itinéraire.
+              Trouvez facilement les services publics à Kinshasa : communes,
+              hôpitaux, administrations. Consultez les prix officiels, les
+              documents requis et obtenez l&apos;itinéraire.
             </p>
           </div>
 

@@ -123,11 +123,11 @@ export default function LieuDetailPage() {
 
       <main className="flex-1">
         {/* Header */}
-        <section className="bg-white border-b border-border py-6 px-4">
+        <section className="bg-gradient-to-br from-slate-50 to-white border-b border-border py-8 px-4">
           <div className="container mx-auto">
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary mb-5 transition-colors text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour
@@ -136,7 +136,7 @@ export default function LieuDetailPage() {
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                  <h1 className="text-2xl md:text-3xl font-extrabold text-foreground">
                     {lieu.nom}
                   </h1>
                   {lieu.verified && (
@@ -215,7 +215,7 @@ export default function LieuDetailPage() {
               {/* Main content */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Address & Contact */}
-                <div className="bg-white rounded-xl border border-border p-6">
+                <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
                   <h2 className="text-lg font-semibold text-foreground mb-4">
                     Informations de contact
                   </h2>
@@ -303,7 +303,7 @@ export default function LieuDetailPage() {
                 </div>
 
                 {/* Services */}
-                <div className="bg-white rounded-xl border border-border p-6">
+                <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
                   <h2 className="text-lg font-semibold text-foreground mb-4">
                     Services disponibles ({lieu.servicesProposed.length})
                   </h2>
@@ -424,7 +424,7 @@ export default function LieuDetailPage() {
                 </div>
 
                 {/* Reviews */}
-                <div className="bg-white rounded-xl border border-border p-6">
+                <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-foreground">
                       Avis ({lieu._count.avis})
@@ -484,7 +484,7 @@ export default function LieuDetailPage() {
               <div className="space-y-6">
                 {/* Map placeholder */}
                 {lieu.latitude && lieu.longitude && (
-                  <div className="bg-white rounded-xl border border-border overflow-hidden">
+                  <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
                     <div className="h-48 bg-muted flex items-center justify-center">
                       <div className="text-center text-muted-foreground">
                         <MapPin className="w-8 h-8 mx-auto mb-2 text-primary" />
@@ -506,7 +506,7 @@ export default function LieuDetailPage() {
 
                 {/* Zone de Santé */}
                 {lieu.zoneSante && (
-                  <div className="bg-white rounded-xl border border-border p-4">
+                  <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                       Zone de Santé
                     </h3>
@@ -530,10 +530,10 @@ export default function LieuDetailPage() {
                 )}
 
                 {/* Report */}
-                <div className="bg-white rounded-xl border border-border p-4">
+                <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
                   <button
                     onClick={() => setShowReportModal(true)}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-error transition-colors text-sm"
+                    className="flex items-center gap-2 text-muted-foreground hover:text-red-500 transition-colors text-sm"
                   >
                     <AlertTriangle className="w-4 h-4" />
                     Signaler une information erronée

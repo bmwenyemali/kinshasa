@@ -62,10 +62,30 @@ const categories = [
 ];
 
 const quickLinks = [
-  { icon: Stethoscope, label: "Hôpitaux", href: "/carte?type=HOPITAL", color: "text-red-500" },
-  { icon: Shield, label: "Commissariats", href: "/carte?type=COMMISSARIAT", color: "text-indigo-500" },
-  { icon: Building2, label: "Mairies", href: "/carte?type=MAIRIE", color: "text-blue-500" },
-  { icon: FileText, label: "État civil", href: "/recherche?q=acte%20de%20naissance", color: "text-purple-500" },
+  {
+    icon: Stethoscope,
+    label: "Hôpitaux",
+    href: "/carte?type=HOPITAL",
+    color: "text-red-500",
+  },
+  {
+    icon: Shield,
+    label: "Commissariats",
+    href: "/carte?type=COMMISSARIAT",
+    color: "text-indigo-500",
+  },
+  {
+    icon: Building2,
+    label: "Mairies",
+    href: "/carte?type=MAIRIE",
+    color: "text-blue-500",
+  },
+  {
+    icon: FileText,
+    label: "État civil",
+    href: "/recherche?q=acte%20de%20naissance",
+    color: "text-purple-500",
+  },
 ];
 
 export default function HomePage() {
@@ -101,12 +121,11 @@ export default function HomePage() {
             <h1 className="text-4xl md:text-6xl font-extrabold mb-5 leading-tight tracking-tight">
               Trouvez les services
               <br />
-              publics à{" "}
-              <span className="text-secondary">Kinshasa</span>
+              publics à <span className="text-secondary">Kinshasa</span>
             </h1>
             <p className="text-lg md:text-xl text-white/70 mb-8 max-w-xl leading-relaxed">
-              Communes, hôpitaux, administrations — découvrez les prix officiels,
-              documents requis et obtenez l&apos;itinéraire.
+              Communes, hôpitaux, administrations — découvrez les prix
+              officiels, documents requis et obtenez l&apos;itinéraire.
             </p>
 
             {/* Search Bar */}
@@ -283,8 +302,8 @@ export default function HomePage() {
                     Explorez sur la carte
                   </h2>
                   <p className="text-white/70 mb-6 leading-relaxed">
-                    Trouvez les services publics près de vous grâce à notre carte
-                    interactive avec les limites des communes.
+                    Trouvez les services publics près de vous grâce à notre
+                    carte interactive avec les limites des communes.
                   </p>
                   <Link
                     href="/carte"
@@ -298,8 +317,12 @@ export default function HomePage() {
                 <div className="w-full md:w-72 h-48 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
                   <div className="text-center">
                     <MapPin className="w-12 h-12 mx-auto mb-2 text-secondary" />
-                    <p className="text-sm text-white/60 font-medium">24 communes</p>
-                    <p className="text-xs text-white/40">avec limites géographiques</p>
+                    <p className="text-sm text-white/60 font-medium">
+                      24 communes
+                    </p>
+                    <p className="text-xs text-white/40">
+                      avec limites géographiques
+                    </p>
                   </div>
                 </div>
               </div>

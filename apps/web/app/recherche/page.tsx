@@ -69,7 +69,7 @@ function RechercheContent() {
 
       <main className="flex-1">
         {/* Search Header */}
-        <section className="bg-white border-b border-border py-6 px-4">
+        <section className="bg-gradient-to-b from-slate-50 to-white border-b border-border py-8 px-4">
           <div className="container mx-auto">
             <SearchBar
               placeholder="Rechercher un service, lieu..."
@@ -108,7 +108,7 @@ function RechercheContent() {
 
             {/* Filters panel */}
             {showFilters && (
-              <div className="mt-4 p-4 bg-muted rounded-lg animate-fade-in">
+              <div className="mt-4 p-5 bg-white rounded-2xl border border-border shadow-sm animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Type de lieu */}
                   <div>

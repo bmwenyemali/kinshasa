@@ -76,22 +76,25 @@ export default function ZoneSanteDetailPage() {
 
       <main className="flex-1">
         {/* Header */}
-        <section className="bg-gradient-to-br from-primary to-primary-dark text-white py-8 px-4">
-          <div className="container mx-auto">
+        <section className="bg-gradient-to-br from-primary via-primary-dark to-[#003d6b] text-white py-10 px-4 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          </div>
+          <div className="container mx-auto relative z-10">
             <Link
               href="/zones-sante"
-              className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-4 transition-colors"
+              className="inline-flex items-center gap-2 text-white/70 hover:text-white mb-5 transition-colors text-sm"
             >
               <ChevronLeft className="w-4 h-4" />
               Zones de santé
             </Link>
 
             <div className="flex items-start gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                 <Stethoscope className="w-8 h-8" />
               </div>
               <div className="flex-1">
-                <h1 className="text-3xl font-bold mb-2">
+                <h1 className="text-3xl font-extrabold mb-2">
                   Zone de Santé {zone.name}
                 </h1>
                 {zone.communeResponsable && (
@@ -109,13 +112,13 @@ export default function ZoneSanteDetailPage() {
 
             {/* Stats */}
             <div className="flex flex-wrap gap-4 mt-6">
-              <div className="bg-white/10 rounded-lg px-4 py-2">
-                <p className="text-2xl font-bold">{hospitals.length}</p>
-                <p className="text-sm text-white/80">Hôpitaux & Centres</p>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-5 py-3">
+                <p className="text-2xl font-extrabold">{hospitals.length}</p>
+                <p className="text-sm text-white/60">Hôpitaux & Centres</p>
               </div>
-              <div className="bg-white/10 rounded-lg px-4 py-2">
-                <p className="text-2xl font-bold">{otherLieux.length}</p>
-                <p className="text-sm text-white/80">Autres établissements</p>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-5 py-3">
+                <p className="text-2xl font-extrabold">{otherLieux.length}</p>
+                <p className="text-sm text-white/60">Autres établissements</p>
               </div>
             </div>
           </div>

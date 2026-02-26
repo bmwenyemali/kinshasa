@@ -55,12 +55,11 @@ export default function CommunesPage() {
 
           <div className="relative container mx-auto max-w-5xl px-4 py-14">
             <h1 className="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight">
-              Communes de{" "}
-              <span className="text-secondary">Kinshasa</span>
+              Communes de <span className="text-secondary">Kinshasa</span>
             </h1>
             <p className="text-white/60 text-lg max-w-xl leading-relaxed">
-              Découvrez les 24 communes de la ville-province, leurs services publics,
-              quartiers et administrations.
+              Découvrez les 24 communes de la ville-province, leurs services
+              publics, quartiers et administrations.
             </p>
 
             {/* Stats bar */}

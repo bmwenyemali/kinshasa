@@ -50,18 +50,18 @@ export default function FavorisPage() {
       <Header />
 
       <main className="flex-1">
-        {/* Header */}
-        <section className="bg-gradient-to-br from-secondary to-secondary-dark py-8 px-4">
+        {/* Hero */}
+        <section className="bg-gradient-to-br from-primary via-primary-dark to-[#003d6b] text-white py-10 px-4">
           <div className="container mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Heart className="w-6 h-6 text-foreground" />
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <Heart className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="text-2xl md:text-3xl font-bold">
                   Mes Favoris
                 </h1>
-                <p className="text-foreground/70">
+                <p className="text-white/70 mt-0.5">
                   {favoriteIds.length} lieu(x) sauvegardé(s)
                 </p>
               </div>
@@ -73,12 +73,14 @@ export default function FavorisPage() {
         <section className="py-8 px-4">
           <div className="container mx-auto">
             {favoriteIds.length === 0 ? (
-              <div className="text-center py-12">
-                <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-5">
+                  <Heart className="w-10 h-10 text-primary/40" />
+                </div>
                 <h2 className="text-xl font-bold text-foreground mb-2">
                   Aucun favori
                 </h2>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   Ajoutez des lieux à vos favoris pour les retrouver facilement
                 </p>
                 <Link href="/communes">
@@ -130,10 +132,10 @@ function FavoritesList({
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {lieux.map((lieu) => {
         return (
-          <Card key={lieu.id} className="relative overflow-hidden">
+          <Card key={lieu.id} className="relative overflow-hidden card-hover">
             <button
               onClick={() => onRemove(lieu.id)}
-              className="absolute top-2 right-2 z-10 p-2 bg-white rounded-full shadow hover:bg-destructive hover:text-white transition-colors"
+              className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 hover:text-red-500 transition-colors"
               title="Retirer des favoris"
             >
               <Trash2 className="w-4 h-4" />
@@ -141,7 +143,7 @@ function FavoritesList({
 
             <Link href={`/lieux/${lieu.id}`} className="block p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Building2 className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">

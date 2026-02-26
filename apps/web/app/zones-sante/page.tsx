@@ -20,15 +20,18 @@ export default function ZonesSantePage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="bg-gradient-to-br from-primary to-primary-dark text-white py-12 px-4">
-          <div className="container mx-auto">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Stethoscope className="w-6 h-6" />
+        <section className="bg-gradient-to-br from-primary via-primary-dark to-[#003d6b] text-white py-12 px-4 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          </div>
+          <div className="container mx-auto relative z-10">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <Stethoscope className="w-7 h-7" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold">Zones de Santé</h1>
-                <p className="text-white/80">
+                <h1 className="text-3xl font-extrabold">Zones de Santé</h1>
+                <p className="text-white/70 mt-0.5">
                   Kinshasa compte 35 zones de santé couvrant tout le territoire
                 </p>
               </div>
@@ -74,11 +77,11 @@ function ZonesSanteList() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {zones.map((zone: ZoneSanteWithStats) => (
         <Link key={zone.id} href={`/zones-sante/${zone.id}`}>
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
-            <div className="p-4">
+          <Card className="h-full hover:shadow-md transition-all cursor-pointer card-hover">
+            <div className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <div className="w-11 h-11 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center">
                     <Stethoscope className="w-5 h-5 text-primary" />
                   </div>
                   <div>

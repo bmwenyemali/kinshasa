@@ -40,7 +40,9 @@ const Map = dynamic(() => import("@/components/map/MapboxMap"), {
     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50">
       <div className="text-center">
         <Spinner size="lg" />
-        <p className="text-sm text-muted-foreground mt-3">Chargement de la carte...</p>
+        <p className="text-sm text-muted-foreground mt-3">
+          Chargement de la carte...
+        </p>
       </div>
     </div>
   ),
@@ -83,7 +85,12 @@ const filterGroups = [
   {
     label: "Administration",
     icon: <Building2 className="w-4 h-4" />,
-    types: ["ADMINISTRATION", "MAIRIE", "COMMISSARIAT", "TRIBUNAL"] as LieuType[],
+    types: [
+      "ADMINISTRATION",
+      "MAIRIE",
+      "COMMISSARIAT",
+      "TRIBUNAL",
+    ] as LieuType[],
     color: "text-blue-600",
   },
   {
@@ -121,8 +128,8 @@ function CarteContent() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [viewport, setViewport] = useState({
-    latitude: -4.3750,
-    longitude: 15.3100,
+    latitude: -4.375,
+    longitude: 15.31,
     zoom: 11,
   });
 
@@ -195,9 +202,10 @@ function CarteContent() {
               className={`
                 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg backdrop-blur-md border
                 transition-all font-medium text-sm
-                ${showFilters
-                  ? "bg-primary text-white border-primary shadow-primary/25"
-                  : "bg-white/90 text-foreground border-white/50 hover:bg-white"
+                ${
+                  showFilters
+                    ? "bg-primary text-white border-primary shadow-primary/25"
+                    : "bg-white/90 text-foreground border-white/50 hover:bg-white"
                 }
               `}
             >
@@ -304,9 +312,10 @@ function CarteContent() {
               className={`
                 flex items-center gap-2 px-3 py-2 rounded-xl shadow-lg backdrop-blur-md border
                 text-sm font-medium transition-all
-                ${showBoundaries
-                  ? "bg-white/90 text-primary border-primary/30"
-                  : "bg-white/70 text-muted-foreground border-white/50"
+                ${
+                  showBoundaries
+                    ? "bg-white/90 text-primary border-primary/30"
+                    : "bg-white/70 text-muted-foreground border-white/50"
                 }
               `}
             >
@@ -331,7 +340,9 @@ function CarteContent() {
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50">
             <div className="text-center">
               <Spinner size="lg" />
-              <p className="text-sm text-muted-foreground mt-3">Chargement...</p>
+              <p className="text-sm text-muted-foreground mt-3">
+                Chargement...
+              </p>
             </div>
           </div>
         ) : (
@@ -357,7 +368,9 @@ function CarteContent() {
             </button>
 
             <div className="flex items-start gap-3">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${typeColors[selectedLieu.type]}`}>
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${typeColors[selectedLieu.type]}`}
+              >
                 {typeIcons[selectedLieu.type]}
               </div>
               <div className="flex-1 min-w-0">
@@ -425,8 +438,12 @@ function CarteContent() {
               <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                 {Object.entries(LIEU_TYPE_LABELS).map(([type, label]) => (
                   <div key={type} className="flex items-center gap-1.5">
-                    <span className="text-xs">{typeIcons[type as LieuType]}</span>
-                    <span className="text-[11px] text-muted-foreground">{label}</span>
+                    <span className="text-xs">
+                      {typeIcons[type as LieuType]}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {label}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -447,7 +464,9 @@ export default function CartePage() {
           <main className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <Spinner size="lg" />
-              <p className="text-sm text-muted-foreground mt-3">Chargement...</p>
+              <p className="text-sm text-muted-foreground mt-3">
+                Chargement...
+              </p>
             </div>
           </main>
         </div>

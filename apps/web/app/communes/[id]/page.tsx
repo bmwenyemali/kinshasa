@@ -139,11 +139,15 @@ export default function CommuneDetailPage() {
 
       <main className="flex-1">
         {/* Hero Header */}
-        <section className="bg-gradient-to-br from-primary to-primary-dark text-white py-8 px-4">
-          <div className="container mx-auto max-w-5xl">
+        <section className="bg-gradient-to-br from-primary via-primary-dark to-[#003d6b] text-white py-10 px-4 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
+          </div>
+          <div className="container mx-auto max-w-5xl relative z-10">
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-white/80 hover:text-white mb-4 transition-colors text-sm"
+              className="flex items-center gap-2 text-white/70 hover:text-white mb-5 transition-colors text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               Retour aux communes
@@ -151,33 +155,33 @@ export default function CommuneDetailPage() {
 
             <div className="flex items-start justify-between flex-wrap gap-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-3">
+                <h1 className="text-3xl md:text-4xl font-extrabold mb-3">
                   {commune.name}
                 </h1>
-                <div className="flex items-center gap-4 text-white/80 flex-wrap text-sm">
+                <div className="flex items-center gap-3 flex-wrap text-sm">
                   {commune.population && (
-                    <span className="flex items-center gap-1.5">
-                      <Users className="w-4 h-4" />
-                      {commune.population.toLocaleString("fr-FR")} habitants
+                    <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <Users className="w-3.5 h-3.5" />
+                      {commune.population.toLocaleString("fr-FR")} hab.
                     </span>
                   )}
                   {commune.superficie && (
-                    <span className="flex items-center gap-1.5">
-                      <Map className="w-4 h-4" />
+                    <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <Map className="w-3.5 h-3.5" />
                       {commune.superficie} km²
                     </span>
                   )}
-                  <span className="flex items-center gap-1.5">
-                    <LayoutGrid className="w-4 h-4" />
+                  <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <LayoutGrid className="w-3.5 h-3.5" />
                     {commune._count.quartiers} quartiers
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Building className="w-4 h-4" />
+                  <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <Building className="w-3.5 h-3.5" />
                     {commune._count.lieux} lieux
                   </span>
                 </div>
                 {commune.bourgmestre && (
-                  <div className="mt-3 flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg w-fit text-sm">
+                  <div className="mt-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-xl w-fit text-sm">
                     <User className="w-4 h-4" />
                     <span>
                       Bourgmestre : <strong>{commune.bourgmestre}</strong>
@@ -191,7 +195,7 @@ export default function CommuneDetailPage() {
                   href={`https://www.google.com/maps?q=${commune.latitude},${commune.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors text-sm"
+                  className="flex items-center gap-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 px-4 py-2.5 rounded-xl transition-colors text-sm"
                 >
                   <MapPin className="w-4 h-4" />
                   Voir sur la carte
@@ -203,21 +207,23 @@ export default function CommuneDetailPage() {
         </section>
 
         {/* Tabs */}
-        <div className="bg-white border-b border-border sticky top-0 z-10">
-          <div className="container mx-auto max-w-5xl flex gap-0 overflow-x-auto">
+        <div className="bg-white/80 backdrop-blur-lg border-b border-border sticky top-0 z-10">
+          <div className="container mx-auto max-w-5xl flex gap-1 overflow-x-auto px-4">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                className={`px-5 py-3.5 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                   activeTab === tab.key
                     ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-t-lg"
                 }`}
               >
                 {tab.label}
                 {tab.count !== undefined && (
-                  <span className="ml-1.5 text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                  <span className={`ml-1.5 text-xs px-2 py-0.5 rounded-full ${
+                    activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  }`}>
                     {tab.count}
                   </span>
                 )}
@@ -273,12 +279,12 @@ export default function CommuneDetailPage() {
 
               {/* Governance */}
               {commune.bourgmestre && (
-                <div className="bg-white rounded-xl border border-border p-5">
+                <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
                   <h2 className="text-lg font-semibold text-foreground mb-3">
                     Administration
                   </h2>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-full flex items-center justify-center">
                       <User className="w-5 h-5 text-primary" />
                     </div>
                     <div>
@@ -304,9 +310,9 @@ export default function CommuneDetailPage() {
                       <button
                         key={type}
                         onClick={() => setActiveTab("lieux")}
-                        className="flex items-center gap-3 bg-white rounded-lg border border-border hover:border-primary/30 p-3 transition-colors text-left"
+                        className="flex items-center gap-3 bg-white rounded-xl border border-border hover:border-primary/30 hover:shadow-sm p-4 transition-all text-left group"
                       >
-                        <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                        <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
                           {LIEU_TYPE_ICON[type] || (
                             <MapPin className="w-5 h-5" />
                           )}
@@ -424,10 +430,10 @@ export default function CommuneDetailPage() {
                     }) => (
                       <div
                         key={quartier.id}
-                        className="bg-white rounded-xl border border-border p-4"
+                        className="bg-white rounded-xl border border-border p-4 card-hover"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <div className="w-10 h-10 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl flex items-center justify-center">
                             <LayoutGrid className="w-5 h-5 text-primary" />
                           </div>
                           <div>
@@ -521,9 +527,9 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-border p-4">
-      <div className="flex items-center gap-2 mb-1">{icon}</div>
-      <p className="text-2xl font-bold text-foreground">{value}</p>
+    <div className="bg-white rounded-xl border border-border p-4 card-hover">
+      <div className="flex items-center gap-2 mb-2">{icon}</div>
+      <p className="text-2xl font-extrabold text-foreground">{value}</p>
       <p className="text-sm text-muted-foreground">{label}</p>
     </div>
   );

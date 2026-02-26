@@ -122,10 +122,12 @@ export default function MapboxMap({
       // Add commune boundary data with IDs for hover state
       const dataWithIds = {
         ...communeBoundaries,
-        features: communeBoundaries.features.map((f: CommuneFeature, i: number) => ({
-          ...f,
-          id: i,
-        })),
+        features: communeBoundaries.features.map(
+          (f: CommuneFeature, i: number) => ({
+            ...f,
+            id: i,
+          }),
+        ),
       };
 
       m.addSource("communes", {
@@ -133,69 +135,55 @@ export default function MapboxMap({
         data: dataWithIds as unknown as GeoJSON.FeatureCollection,
       });
 
-      // Fill layer
+      // Fill layer — transparent by default, subtle on hover
       m.addLayer({
         id: "communes-fill",
         type: "fill",
         source: "communes",
         paint: {
-          "fill-color": [
-            "match",
-            ["get", "name"],
-            ...communeBoundaries.features.flatMap((f: CommuneFeature) => [
-              f.properties.name,
-              f.properties.color,
-            ]),
-            "#888888",
-          ],
+          "fill-color": "#94a3b8",
           "fill-opacity": [
             "case",
             ["boolean", ["feature-state", "hover"], false],
-            0.35,
-            0.15,
+            0.08,
+            0,
           ],
         },
       });
 
-      // Border line layer
+      // Border line layer — thin neutral lines
       m.addLayer({
         id: "communes-border",
         type: "line",
         source: "communes",
         paint: {
-          "line-color": [
-            "match",
-            ["get", "name"],
-            ...communeBoundaries.features.flatMap((f: CommuneFeature) => [
-              f.properties.name,
-              f.properties.color,
-            ]),
-            "#888888",
-          ],
+          "line-color": "#64748b",
           "line-width": [
             "interpolate",
             ["linear"],
             ["zoom"],
             9,
-            1,
+            0.6,
             12,
-            2.5,
+            1.2,
             15,
-            3,
+            1.8,
           ],
-          "line-opacity": 0.7,
+          "line-opacity": 0.55,
         },
       });
 
       // Labels source
-      const labelFeatures = communeBoundaries.features.map((f: CommuneFeature) => {
-        const center = getCommuneCentroid(f);
-        return {
-          type: "Feature" as const,
-          properties: { name: f.properties.name },
-          geometry: { type: "Point" as const, coordinates: center },
-        };
-      });
+      const labelFeatures = communeBoundaries.features.map(
+        (f: CommuneFeature) => {
+          const center = getCommuneCentroid(f);
+          return {
+            type: "Feature" as const,
+            properties: { name: f.properties.name },
+            geometry: { type: "Point" as const, coordinates: center },
+          };
+        },
+      );
 
       m.addSource("commune-labels", {
         type: "geojson",
