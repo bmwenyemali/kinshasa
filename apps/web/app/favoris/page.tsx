@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Heart, MapPin, Star, Trash2, Building2 } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { trpc } from "@/lib/trpc";
+import { trpc, type LieuDetail } from "@/lib/trpc";
 import { Card, Button, Spinner, Badge } from "@kinservices/ui";
 import { LIEU_TYPE_LABELS } from "@kinservices/ui";
 
@@ -124,7 +124,7 @@ function FavoritesList({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {lieux.map((lieu) => {
+      {lieux.map((lieu: LieuDetail | undefined) => {
         if (!lieu) return null;
         return (
           <Card key={lieu.id} className="relative overflow-hidden">

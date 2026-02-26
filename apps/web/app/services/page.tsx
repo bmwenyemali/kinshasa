@@ -17,7 +17,7 @@ import {
 import { Header, Footer } from "@/components/layout/Header";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { trpc } from "@/lib/trpc";
+import { trpc, type LieuSearchResult, type FeaturedLieu } from "@/lib/trpc";
 import { Card, Badge, Spinner } from "@kinservices/ui";
 import { ServiceCategorie } from "@kinservices/api";
 import { SERVICE_CATEGORIE_LABELS } from "@kinservices/ui";
@@ -193,7 +193,7 @@ function ServicesList({ category }: { category: ServiceCategorie }) {
         <Badge variant="outline">{lieux.items.length} résultat(s)</Badge>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {lieux.items.map((lieu) => (
+        {lieux.items.map((lieu: LieuSearchResult) => (
           <ServiceCard
             key={lieu.id}
             id={lieu.id}
@@ -229,7 +229,7 @@ function PopularServices() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {lieux.map((lieu) => (
+      {lieux.map((lieu: FeaturedLieu) => (
         <ServiceCard
           key={lieu.id}
           id={lieu.id}

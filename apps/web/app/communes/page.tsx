@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Search, MapPin, Users, Building, ChevronRight } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
-import { trpc } from "@/lib/trpc";
+import { trpc, type CommuneWithStats } from "@/lib/trpc";
 import { Spinner } from "@kinservices/ui";
 
 export default function CommunesPage() {
@@ -12,8 +12,8 @@ export default function CommunesPage() {
   const { data: communes, isLoading } =
     trpc.communes.getAllWithStats.useQuery();
 
-  const filteredCommunes = communes?.filter((commune) =>
-    commune.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredCommunes = communes?.filter((c: CommuneWithStats) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -56,7 +56,7 @@ export default function CommunesPage() {
               </div>
             ) : filteredCommunes && filteredCommunes.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredCommunes?.map((commune) => (
+                {filteredCommunes?.map((commune: CommuneWithStats) => (
                   <Link key={commune.id} href={`/communes/${commune.id}`}>
                     <div className="bg-white rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all p-5 h-full group">
                       <div className="flex items-start justify-between mb-3">

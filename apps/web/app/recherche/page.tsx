@@ -6,7 +6,7 @@ import { Filter, X, ChevronDown } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { trpc } from "@/lib/trpc";
+import { trpc, type SearchResult } from "@/lib/trpc";
 import { Spinner, Button, Badge } from "@kinservices/ui";
 import { LIEU_TYPE_LABELS, SERVICE_CATEGORIE_LABELS } from "@kinservices/ui";
 import { LieuType, ServiceCategorie } from "@kinservices/api";
@@ -180,7 +180,7 @@ function RechercheContent() {
                   {results.total} résultat(s) trouvé(s)
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {results.items.map((lieu) => (
+                  {results.items.map((lieu: SearchResult) => (
                     <ServiceCard
                       key={lieu.id}
                       id={lieu.id}

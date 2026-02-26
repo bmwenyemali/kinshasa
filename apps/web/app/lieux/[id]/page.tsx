@@ -24,7 +24,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
-import { trpc } from "@/lib/trpc";
+import { trpc, type LieuService, type LieuAvis } from "@/lib/trpc";
 import { Spinner, Badge, Button } from "@kinservices/ui";
 import {
   LIEU_TYPE_LABELS,
@@ -319,7 +319,7 @@ export default function LieuDetailPage() {
                             {SERVICE_CATEGORIE_LABELS[categorie] || categorie}
                           </h3>
                           <div className="space-y-2">
-                            {services.map((service) => {
+                            {services.map((service: LieuService) => {
                               const isExpanded = expandedServices.includes(
                                 service.id,
                               );
@@ -436,7 +436,7 @@ export default function LieuDetailPage() {
 
                   {lieu.avis && lieu.avis.length > 0 ? (
                     <div className="space-y-4">
-                      {lieu.avis.map((avis) => (
+                      {lieu.avis.map((avis: LieuAvis) => (
                         <div
                           key={avis.id}
                           className="border-b border-border pb-4 last:border-0 last:pb-0"

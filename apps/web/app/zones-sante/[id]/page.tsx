@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { trpc } from "@/lib/trpc";
+import { trpc, type ZoneSanteLieu } from "@/lib/trpc";
 import { Card, Badge, Button, Spinner } from "@kinservices/ui";
 import { LIEU_TYPE_LABELS } from "@kinservices/ui";
 
@@ -65,8 +65,10 @@ export default function ZoneSanteDetailPage() {
     );
   }
 
-  const hospitals = zone.lieux?.filter((l) => l.type === "HOPITAL") || [];
-  const otherLieux = zone.lieux?.filter((l) => l.type !== "HOPITAL") || [];
+  const hospitals =
+    zone.lieux?.filter((l: ZoneSanteLieu) => l.type === "HOPITAL") || [];
+  const otherLieux =
+    zone.lieux?.filter((l: ZoneSanteLieu) => l.type !== "HOPITAL") || [];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -128,7 +130,7 @@ export default function ZoneSanteDetailPage() {
                 Hôpitaux et Centres de Santé
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {hospitals.map((lieu) => (
+                {hospitals.map((lieu: ZoneSanteLieu) => (
                   <ServiceCard
                     key={lieu.id}
                     id={lieu.id}
@@ -154,7 +156,7 @@ export default function ZoneSanteDetailPage() {
                 Autres Établissements
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {otherLieux.map((lieu) => (
+                {otherLieux.map((lieu: ZoneSanteLieu) => (
                   <ServiceCard
                     key={lieu.id}
                     id={lieu.id}

@@ -10,7 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
-import { trpc } from "@/lib/trpc";
+import { trpc, type ZoneSanteWithStats } from "@/lib/trpc";
 import { Card, Badge } from "@kinservices/ui";
 
 export default function ZonesSantePage() {
@@ -72,7 +72,7 @@ function ZonesSanteList() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {zones.map((zone) => (
+      {zones.map((zone: ZoneSanteWithStats) => (
         <Link key={zone.id} href={`/zones-sante/${zone.id}`}>
           <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
             <div className="p-4">

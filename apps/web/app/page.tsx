@@ -15,7 +15,7 @@ import {
 import { Header, Footer } from "@/components/layout/Header";
 import { SearchBar } from "@/components/search/SearchBar";
 import { ServiceCard } from "@/components/cards/ServiceCard";
-import { trpc } from "@/lib/trpc";
+import { trpc, type FeaturedLieu } from "@/lib/trpc";
 import { Spinner, CardSkeleton } from "@kinservices/ui";
 
 const categories = [
@@ -182,7 +182,7 @@ export default function HomePage() {
               </div>
             ) : featuredLieux && featuredLieux.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {featuredLieux.map((lieu) => (
+                {featuredLieux.map((lieu: FeaturedLieu) => (
                   <ServiceCard
                     key={lieu.id}
                     id={lieu.id}
