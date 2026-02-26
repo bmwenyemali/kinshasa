@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import {
   Building2,
-  Stethoscope,
   FileText,
   AlertTriangle,
   Map,
@@ -27,13 +26,6 @@ const categories = [
     color: "bg-blue-500",
   },
   {
-    name: "Zones de Santé",
-    description: "35 zones de santé",
-    icon: Stethoscope,
-    href: "/zones-sante",
-    color: "bg-green-500",
-  },
-  {
     name: "Services Administratifs",
     description: "État civil, impôts, justice",
     icon: FileText,
@@ -41,10 +33,17 @@ const categories = [
     color: "bg-purple-500",
   },
   {
+    name: "Carte Interactive",
+    description: "Trouvez les services près de vous",
+    icon: Map,
+    href: "/carte",
+    color: "bg-green-500",
+  },
+  {
     name: "Urgences",
     description: "Hôpitaux, commissariats",
     icon: AlertTriangle,
-    href: "/urgences",
+    href: "/recherche?q=urgence",
     color: "bg-red-500",
   },
 ];
@@ -245,8 +244,8 @@ export default function HomePage() {
                 <p className="text-white/80 mt-1">Communes</p>
               </div>
               <div>
-                <p className="text-4xl font-bold text-secondary">35</p>
-                <p className="text-white/80 mt-1">Zones de Santé</p>
+                <p className="text-4xl font-bold text-secondary">150+</p>
+                <p className="text-white/80 mt-1">Quartiers</p>
               </div>
               <div>
                 <p className="text-4xl font-bold text-secondary">100+</p>

@@ -9,12 +9,12 @@ export const communeRouter = router({
     });
   }),
 
-  // Get communes with stats (count of lieux)
+  // Get communes with stats (count of lieux + quartiers)
   getAllWithStats: publicProcedure.query(async ({ ctx }) => {
     const communes = await ctx.prisma.commune.findMany({
       include: {
         _count: {
-          select: { lieux: true },
+          select: { lieux: true, quartiers: true },
         },
       },
       orderBy: { name: "asc" },
@@ -22,6 +22,7 @@ export const communeRouter = router({
     return communes.map((commune) => ({
       ...commune,
       lieuxCount: commune._count.lieux,
+      quartiersCount: commune._count.quartiers,
     }));
   }),
 
@@ -36,14 +37,13 @@ export const communeRouter = router({
             orderBy: { name: "asc" },
           },
           lieux: {
-            where: { verified: true },
             include: {
               servicesProposed: true,
               _count: {
                 select: { avis: true },
               },
             },
-            take: 20,
+            orderBy: [{ featured: "desc" }, { nom: "asc" }],
           },
           _count: {
             select: { lieux: true, quartiers: true },

@@ -62,6 +62,8 @@ export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] =
     useState<ServiceCategorie | null>(null);
 
+  const { data: categoryCounts } = trpc.services.getCategoryCounts.useQuery();
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -69,9 +71,11 @@ export default function ServicesPage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-gradient-to-br from-primary to-primary-dark text-white py-12 px-4">
-          <div className="container mx-auto">
-            <h1 className="text-3xl font-bold mb-2">Services Publics</h1>
-            <p className="text-white/80 max-w-xl">
+          <div className="container mx-auto max-w-5xl">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              Services Publics
+            </h1>
+            <p className="text-white/80 max-w-xl text-lg">
               Trouvez tous les services administratifs et publics disponibles à
               Kinshasa, avec les documents requis, prix officiels et délais.
             </p>
@@ -90,44 +94,52 @@ export default function ServicesPage() {
 
         {/* Categories Grid */}
         <section className="py-8 px-4">
-          <div className="container mx-auto">
+          <div className="container mx-auto max-w-5xl">
             <h2 className="text-xl font-bold text-foreground mb-6">
               Catégories de Services
             </h2>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(SERVICE_CATEGORIE_LABELS).map(([cat, label]) => (
-                <button
-                  key={cat}
-                  onClick={() =>
-                    setSelectedCategory(
-                      selectedCategory === cat
-                        ? null
-                        : (cat as ServiceCategorie),
-                    )
-                  }
-                  className={`
-                    relative p-6 rounded-xl border-2 transition-all text-left
-                    ${
-                      selectedCategory === cat
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50 bg-white"
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Object.entries(SERVICE_CATEGORIE_LABELS).map(([cat, label]) => {
+                const count = categoryCounts?.[cat] ?? 0;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() =>
+                      setSelectedCategory(
+                        selectedCategory === cat
+                          ? null
+                          : (cat as ServiceCategorie),
+                      )
                     }
-                  `}
-                >
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
-                      categoryColors[cat as ServiceCategorie]
-                    }`}
+                    className={`
+                      relative p-5 rounded-xl border-2 transition-all text-left
+                      ${
+                        selectedCategory === cat
+                          ? "border-primary bg-primary/5 shadow-md"
+                          : "border-border hover:border-primary/50 bg-white"
+                      }
+                    `}
                   >
-                    {categoryIcons[cat as ServiceCategorie]}
-                  </div>
-                  <h3 className="font-semibold text-foreground">{label}</h3>
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                    {categoryDescriptions[cat as ServiceCategorie]}
-                  </p>
-                </button>
-              ))}
+                    <div
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
+                        categoryColors[cat as ServiceCategorie]
+                      }`}
+                    >
+                      {categoryIcons[cat as ServiceCategorie]}
+                    </div>
+                    <h3 className="font-semibold text-foreground">{label}</h3>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {categoryDescriptions[cat as ServiceCategorie]}
+                    </p>
+                    {count > 0 && (
+                      <span className="absolute top-3 right-3 text-xs bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-full">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </section>

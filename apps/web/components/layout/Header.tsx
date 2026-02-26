@@ -25,7 +25,6 @@ export function Header() {
   const navLinks = [
     { href: "/", label: "Accueil", icon: Home },
     { href: "/communes", label: "Communes", icon: Building2 },
-    { href: "/zones-sante", label: "Zones de Santé", icon: Stethoscope },
     { href: "/services", label: "Services", icon: FileText },
     { href: "/carte", label: "Carte", icon: Map },
   ];

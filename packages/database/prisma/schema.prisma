@@ -21,6 +21,7 @@ model Commune {
   description String?  @db.Text
   population  Int?
   superficie  Float?   // en km²
+  bourgmestre String?  @db.VarChar(150)
   latitude    Decimal? @db.Decimal(10, 8)
   longitude   Decimal? @db.Decimal(11, 8)
   imageUrl    String?  @map("image_url")
@@ -35,13 +36,14 @@ model Commune {
 }
 
 model Quartier {
-  id        String   @id @default(uuid())
-  communeId String   @map("commune_id")
-  name      String   @db.VarChar(100)
-  latitude  Decimal? @db.Decimal(10, 8)
-  longitude Decimal? @db.Decimal(11, 8)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  communeId  String   @map("commune_id")
+  name       String   @db.VarChar(100)
+  population Int?
+  latitude   Decimal? @db.Decimal(10, 8)
+  longitude  Decimal? @db.Decimal(11, 8)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   // Relations
   commune Commune @relation(fields: [communeId], references: [id], onDelete: Cascade)

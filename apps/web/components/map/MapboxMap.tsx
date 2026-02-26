@@ -6,7 +6,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { LieuType } from "@kinservices/api";
 
 // MapBox Access Token
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
 interface Lieu {
   id: string;

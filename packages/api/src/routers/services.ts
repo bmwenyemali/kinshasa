@@ -139,6 +139,20 @@ export const serviceRouter = router({
       });
     }),
 
+  // Get count of services per category
+  getCategoryCounts: publicProcedure.query(async ({ ctx }) => {
+    const counts = await ctx.prisma.servicePropose.groupBy({
+      by: ["categorie"],
+      _count: { id: true },
+      where: { actif: true },
+    });
+    const result: Record<string, number> = {};
+    for (const c of counts) {
+      result[c.categorie] = c._count.id;
+    }
+    return result;
+  }),
+
   // Get popular/common services
   getPopular: publicProcedure.query(async ({ ctx }) => {
     // Get the most common services by count
