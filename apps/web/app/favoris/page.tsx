@@ -58,9 +58,7 @@ export default function FavorisPage() {
                 <Heart className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold">
-                  Mes Favoris
-                </h1>
+                <h1 className="text-2xl md:text-3xl font-bold">Mes Favoris</h1>
                 <p className="text-white/70 mt-0.5">
                   {favoriteIds.length} lieu(x) sauvegardé(s)
                 </p>

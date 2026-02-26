@@ -221,9 +221,13 @@ export default function CommuneDetailPage() {
               >
                 {tab.label}
                 {tab.count !== undefined && (
-                  <span className={`ml-1.5 text-xs px-2 py-0.5 rounded-full ${
-                    activeTab === tab.key ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                  }`}>
+                  <span
+                    className={`ml-1.5 text-xs px-2 py-0.5 rounded-full ${
+                      activeTab === tab.key
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
                     {tab.count}
                   </span>
                 )}
