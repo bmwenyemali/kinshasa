@@ -9,6 +9,9 @@ import { signalementRouter } from "./signalements";
 import { favorisRouter } from "./favoris";
 import { alerteRouter } from "./alertes";
 import { searchRouter } from "./search";
+import { villeRouter } from "./ville";
+import { authRouter } from "./auth";
+import { adminRouter } from "./admin";
 
 export const appRouter = router({
   communes: communeRouter,
@@ -21,6 +24,9 @@ export const appRouter = router({
   favoris: favorisRouter,
   alertes: alerteRouter,
   search: searchRouter,
+  ville: villeRouter,
+  auth: authRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

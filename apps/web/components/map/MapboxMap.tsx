@@ -21,6 +21,7 @@ interface Lieu {
   adresse: string | null;
   verified: boolean;
   commune?: { name: string } | null;
+  [key: string]: unknown;
 }
 
 interface Viewport {
@@ -44,11 +45,13 @@ const typeColors: Record<LieuType, string> = {
   CLINIQUE: "#F87171",
   CENTRE_SANTE: "#FB923C",
   ADMINISTRATION: "#3B82F6",
-  MAIRIE: "#2563EB",
+  MAISON_COMMUNALE: "#2563EB",
   COMMISSARIAT: "#6366F1",
+  POLICE: "#4F46E5",
   TRIBUNAL: "#8B5CF6",
   ECOLE: "#10B981",
   UNIVERSITE: "#059669",
+  GOUVERNORAT: "#0EA5E9",
   AUTRE: "#6B7280",
 };
 
@@ -57,11 +60,13 @@ const typeEmojis: Record<LieuType, string> = {
   CLINIQUE: "🏨",
   CENTRE_SANTE: "🏪",
   ADMINISTRATION: "🏛️",
-  MAIRIE: "🏢",
+  MAISON_COMMUNALE: "🏛️",
   COMMISSARIAT: "👮",
+  POLICE: "🚔",
   TRIBUNAL: "⚖️",
   ECOLE: "🏫",
   UNIVERSITE: "🎓",
+  GOUVERNORAT: "🏛️",
   AUTRE: "📍",
 };
 
@@ -91,9 +96,14 @@ export default function MapboxMap({
       zoom: viewport.zoom,
       minZoom: 9,
       maxZoom: 18,
+      dragPan: true,
+      scrollZoom: true,
+      touchZoomRotate: true,
+      doubleClickZoom: true,
+      dragRotate: false,
       maxBounds: [
-        [14.8, -4.65],
-        [16.2, -4.05],
+        [14.5, -4.8],
+        [16.5, -3.8],
       ],
     });
 

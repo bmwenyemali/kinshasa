@@ -14,17 +14,34 @@ import {
   X,
   Building2,
   FileText,
+  Landmark,
+  Shield,
+  LogIn,
 } from "lucide-react";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [loggedIn, setLoggedIn] = React.useState(false);
+  const [isAdmin, setIsAdmin] = React.useState(false);
   const pathname = usePathname();
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem("kinservices_user");
+    if (stored) {
+      setLoggedIn(true);
+      try {
+        const parsed = JSON.parse(stored);
+        setIsAdmin(parsed.role === "ADMINISTRATEUR");
+      } catch {}
+    }
+  }, []);
 
   const navLinks = [
     { href: "/", label: "Accueil", icon: Home },
     { href: "/communes", label: "Communes", icon: Building2 },
     { href: "/services", label: "Services", icon: FileText },
     { href: "/carte", label: "Carte", icon: Map },
+    { href: "/gestion-ville", label: "La Ville", icon: Landmark },
   ];
 
   return (
@@ -78,17 +95,25 @@ export function Header() {
             >
               <Search className="w-5 h-5 text-muted-foreground" />
             </Link>
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="p-2.5 rounded-xl hover:bg-muted/80 transition-colors hidden sm:flex"
+                title="Administration"
+              >
+                <Shield className="w-5 h-5 text-primary" />
+              </Link>
+            )}
             <Link
-              href="/favoris"
+              href={loggedIn ? "/profil" : "/auth/login"}
               className="p-2.5 rounded-xl hover:bg-muted/80 transition-colors hidden sm:flex"
+              title={loggedIn ? "Mon profil" : "Se connecter"}
             >
-              <Heart className="w-5 h-5 text-muted-foreground" />
-            </Link>
-            <Link
-              href="/profil"
-              className="p-2.5 rounded-xl hover:bg-muted/80 transition-colors hidden sm:flex"
-            >
-              <User className="w-5 h-5 text-muted-foreground" />
+              {loggedIn ? (
+                <User className="w-5 h-5 text-primary" />
+              ) : (
+                <LogIn className="w-5 h-5 text-muted-foreground" />
+              )}
             </Link>
 
             {/* Mobile menu button */}
@@ -131,21 +156,32 @@ export function Header() {
                 );
               })}
               <div className="border-t border-border/50 my-2" />
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary hover:bg-primary/10"
+                >
+                  <Shield className="w-5 h-5" />
+                  Administration
+                </Link>
+              )}
               <Link
-                href="/favoris"
+                href={loggedIn ? "/profil" : "/auth/login"}
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/80"
               >
-                <Heart className="w-5 h-5" />
-                Favoris
-              </Link>
-              <Link
-                href="/profil"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/80"
-              >
-                <User className="w-5 h-5" />
-                Profil
+                {loggedIn ? (
+                  <>
+                    <User className="w-5 h-5" />
+                    Mon profil
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5" />
+                    Se connecter
+                  </>
+                )}
               </Link>
             </div>
           </nav>
@@ -200,6 +236,14 @@ export function Footer() {
               <li>
                 <Link href="/carte" className="hover:text-white transition">
                   Carte interactive
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/gestion-ville"
+                  className="hover:text-white transition"
+                >
+                  Gestion de la Ville
                 </Link>
               </li>
               <li>

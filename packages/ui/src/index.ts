@@ -33,11 +33,13 @@ export const LIEU_TYPE_LABELS: LieuTypeLabel = {
   CLINIQUE: "Clinique",
   CENTRE_SANTE: "Centre de Santé",
   ADMINISTRATION: "Administration",
-  MAIRIE: "Mairie",
+  MAISON_COMMUNALE: "Maison Communale",
   COMMISSARIAT: "Commissariat",
+  POLICE: "Police",
   TRIBUNAL: "Tribunal",
   ECOLE: "École",
   UNIVERSITE: "Université",
+  GOUVERNORAT: "Gouvernorat",
   AUTRE: "Autre",
 };
 
@@ -54,6 +56,7 @@ export const SERVICE_CATEGORIE_LABELS: ServiceCategorieLabel = {
   URGENCE: "Urgence",
   SOCIAL: "Social",
   TRANSPORT: "Transport",
+  SECURITE: "Sécurité",
   AUTRE: "Autre",
 };
 
@@ -62,11 +65,13 @@ export const LIEU_TYPE_ICONS: { [key: string]: string } = {
   CLINIQUE: "🏨",
   CENTRE_SANTE: "🏪",
   ADMINISTRATION: "🏛️",
-  MAIRIE: "🏢",
+  MAISON_COMMUNALE: "🏛️",
   COMMISSARIAT: "👮",
+  POLICE: "🚔",
   TRIBUNAL: "⚖️",
   ECOLE: "🏫",
   UNIVERSITE: "🎓",
+  GOUVERNORAT: "🏛️",
   AUTRE: "📍",
 };
 
@@ -79,6 +84,7 @@ export const SERVICE_CATEGORIE_ICONS: { [key: string]: string } = {
   URGENCE: "🚨",
   SOCIAL: "🤝",
   TRANSPORT: "🚌",
+  SECURITE: "🔒",
   AUTRE: "📋",
 };
 

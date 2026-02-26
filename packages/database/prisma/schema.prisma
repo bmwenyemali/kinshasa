@@ -13,6 +13,49 @@ datasource db {
 }
 
 // ============================================
+// USER & AUTH TABLES
+// ============================================
+
+enum UserRole {
+  VISITEUR
+  GESTIONNAIRE
+  ADMINISTRATEUR
+
+  @@map("user_role")
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  FACEBOOK
+
+  @@map("auth_provider")
+}
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique @db.VarChar(200)
+  passwordHash  String?      @map("password_hash")
+  provider      AuthProvider @default(EMAIL)
+  providerId    String?      @map("provider_id")
+  role          UserRole     @default(VISITEUR)
+  active        Boolean      @default(true)
+  prenom        String?      @db.VarChar(100)
+  nom           String?      @db.VarChar(100)
+  phone         String?      @db.VarChar(30)
+  sexe          String?      @db.VarChar(10)    // M, F, Autre
+  trancheAge    String?      @map("tranche_age") @db.VarChar(20) // 18-25, 26-35, etc.
+  photoUrl      String?      @map("photo_url")
+  lieuGereId    String?      @map("lieu_gere_id") // For GESTIONNAIRE: linked lieu
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ============================================
 // GEOGRAPHIC TABLES
 // ============================================
 
@@ -37,14 +80,16 @@ model Commune {
 }
 
 model Quartier {
-  id         String   @id @default(uuid())
-  communeId  String   @map("commune_id")
-  name       String   @db.VarChar(100)
-  population Int?
-  latitude   Decimal? @db.Decimal(10, 8)
-  longitude  Decimal? @db.Decimal(11, 8)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  communeId     String   @map("commune_id")
+  name          String   @db.VarChar(100)
+  population    Int?
+  chefQuartier  String?  @map("chef_quartier") @db.VarChar(150)
+  referenceAdresse String? @map("reference_adresse") @db.Text
+  latitude      Decimal? @db.Decimal(10, 8)
+  longitude     Decimal? @db.Decimal(11, 8)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
   commune Commune @relation(fields: [communeId], references: [id], onDelete: Cascade)
@@ -83,11 +128,13 @@ enum LieuType {
   CLINIQUE
   CENTRE_SANTE
   ADMINISTRATION
-  MAIRIE
+  MAISON_COMMUNALE
   COMMISSARIAT
+  POLICE
   TRIBUNAL
   ECOLE
   UNIVERSITE
+  GOUVERNORAT
   AUTRE
 
   @@map("lieu_type")
@@ -102,6 +149,7 @@ enum ServiceCategorie {
   URGENCE
   SOCIAL
   TRANSPORT
+  SECURITE
   AUTRE
 
   @@map("service_categorie")
@@ -115,17 +163,18 @@ model Lieu {
   quartierId  String?  @map("quartier_id")
   zoneSanteId String?  @map("zone_sante_id")
   adresse     String?  @db.Text
-  reperes     String?  @db.Text // "À côté de l'INPP"
+  reperes     String?  @db.Text
   telephone   String?  @db.VarChar(50)
   telephone2  String?  @map("telephone_2") @db.VarChar(50)
   email       String?  @db.VarChar(100)
   siteWeb     String?  @map("site_web") @db.VarChar(200)
-  horaires    Json?    // Stockage flexible des horaires
+  horaires    Json?
   latitude    Decimal? @db.Decimal(10, 8)
   longitude   Decimal? @db.Decimal(11, 8)
-  photos      String[] // URLs Cloudinary
+  photos      String[]
   verified    Boolean  @default(false)
   featured    Boolean  @default(false)
+  responsable String?  @db.VarChar(200) // Captain, Director, etc.
   createdBy   String?  @map("created_by")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -156,8 +205,8 @@ model ServicePropose {
   documentsRequis        String[]         @map("documents_requis")
   prixOfficiel           Decimal?         @map("prix_officiel") @db.Decimal(12, 2)
   devise                 String           @default("FC") @db.VarChar(10)
-  delai                  String?          @db.VarChar(100) // "48h", "3 jours ouvrables"
-  procedure              String?          @db.Text         // Description étape par étape
+  delai                  String?          @db.VarChar(100)
+  procedure              String?          @db.Text
   conditionsParticulieres String?          @map("conditions_particulieres") @db.Text
   actif                  Boolean          @default(true)
   createdAt              DateTime         @default(now()) @map("created_at")
@@ -170,6 +219,77 @@ model ServicePropose {
   @@index([categorie])
   @@index([nomService])
   @@map("services_proposes")
+}
+
+// ============================================
+// GESTION DE LA VILLE TABLES
+// ============================================
+
+model Gouvernorat {
+  id           String   @id @default(uuid())
+  gouverneur   String   @db.VarChar(200)
+  photoUrl     String?  @map("photo_url")
+  adresse      String?  @db.Text
+  telephone    String?  @db.VarChar(50)
+  email        String?  @db.VarChar(100)
+  siteWeb      String?  @map("site_web") @db.VarChar(200)
+  description  String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  ministres    Ministre[]
+
+  @@map("gouvernorat")
+}
+
+model Ministre {
+  id             String   @id @default(uuid())
+  gouvernoratId  String   @map("gouvernorat_id")
+  nom            String   @db.VarChar(200)
+  portefeuille   String   @db.VarChar(200)  // Ministère
+  photoUrl       String?  @map("photo_url")
+  telephone      String?  @db.VarChar(50)
+  email          String?  @db.VarChar(100)
+  ordre          Int      @default(0)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  gouvernorat    Gouvernorat @relation(fields: [gouvernoratId], references: [id], onDelete: Cascade)
+
+  @@map("ministres")
+}
+
+model Depute {
+  id            String   @id @default(uuid())
+  nom           String   @db.VarChar(200)
+  parti         String?  @db.VarChar(100)
+  circonscription String? @db.VarChar(150)
+  photoUrl      String?  @map("photo_url")
+  telephone     String?  @db.VarChar(50)
+  email         String?  @db.VarChar(100)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("deputes")
+}
+
+model Projet {
+  id            String   @id @default(uuid())
+  titre         String   @db.VarChar(300)
+  description   String   @db.Text
+  statut        String   @default("EN_COURS") @db.VarChar(30) // EN_COURS, TERMINE, PLANIFIE
+  budget        Decimal? @db.Decimal(15, 2)
+  devise        String   @default("USD") @db.VarChar(10)
+  dateDebut     DateTime? @map("date_debut")
+  dateFin       DateTime? @map("date_fin")
+  localisation  String?  @db.VarChar(200)
+  maitreDoeuvre String?  @map("maitre_doeuvre") @db.VarChar(200)
+  photos        String[]
+  categorie     String?  @db.VarChar(100) // Infrastructure, Santé, Éducation, etc.
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("projets")
 }
 
 // ============================================
@@ -261,7 +381,7 @@ model Alerte {
   id        String   @id @default(uuid())
   titre     String   @db.VarChar(200)
   message   String   @db.Text
-  type      String   @db.VarChar(50) // info, warning, urgent
+  type      String   @db.VarChar(50)
   communeId String?  @map("commune_id")
   actif     Boolean  @default(true)
   dateDebut DateTime @map("date_debut")

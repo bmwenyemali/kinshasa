@@ -8,6 +8,8 @@ export {
   LieuType,
   ServiceCategorie,
   SignalementType,
+  UserRole,
+  AuthProvider,
   type Commune,
   type Quartier,
   type ZoneSante,
@@ -18,4 +20,9 @@ export {
   type Favori,
   type SearchHistory,
   type Alerte,
+  type User,
+  type Gouvernorat,
+  type Ministre,
+  type Depute,
+  type Projet,
 } from "@kinservices/database";

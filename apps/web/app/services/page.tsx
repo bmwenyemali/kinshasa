@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Search,
   Sparkles,
+  Shield,
 } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
 import { SearchBar } from "@/components/search/SearchBar";
@@ -33,6 +34,7 @@ const categoryIcons: Record<ServiceCategorie, React.ReactNode> = {
   SOCIAL: <Heart className="w-6 h-6" />,
   TRANSPORT: <Bus className="w-6 h-6" />,
   AUTRE: <HelpCircle className="w-6 h-6" />,
+  SECURITE: <Shield className="w-6 h-6" />,
 };
 
 const categoryDescriptions: Record<ServiceCategorie, string> = {
@@ -45,6 +47,7 @@ const categoryDescriptions: Record<ServiceCategorie, string> = {
   SOCIAL: "Aide sociale, pensions",
   TRANSPORT: "Permis, carte grise",
   AUTRE: "Autres services administratifs",
+  SECURITE: "Police, sécurité publique",
 };
 
 const categoryGradients: Record<ServiceCategorie, string> = {
@@ -57,6 +60,7 @@ const categoryGradients: Record<ServiceCategorie, string> = {
   SOCIAL: "from-pink-500 to-fuchsia-600",
   TRANSPORT: "from-orange-500 to-amber-600",
   AUTRE: "from-gray-500 to-slate-600",
+  SECURITE: "from-indigo-500 to-indigo-600",
 };
 
 const categoryBgColors: Record<ServiceCategorie, string> = {
@@ -69,6 +73,7 @@ const categoryBgColors: Record<ServiceCategorie, string> = {
   SOCIAL: "bg-pink-50 border-pink-100",
   TRANSPORT: "bg-orange-50 border-orange-100",
   AUTRE: "bg-gray-50 border-gray-100",
+  SECURITE: "bg-indigo-50 border-indigo-100",
 };
 
 export default function ServicesPage() {

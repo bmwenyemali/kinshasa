@@ -25,3 +25,19 @@ export type SearchResult = RouterOutputs["search"]["advanced"]["items"][number];
 export type FeaturedLieu = RouterOutputs["lieux"]["getFeatured"][number];
 export type PopularSearch =
   RouterOutputs["search"]["getPopularSearches"][number];
+
+// Ville types
+export type GouvernoratData = RouterOutputs["ville"]["getGouvernorat"];
+export type DeputeData = NonNullable<
+  RouterOutputs["ville"]["getDeputes"]
+>["items"][number];
+export type ProjetData = NonNullable<
+  RouterOutputs["ville"]["getProjets"]
+>["items"][number];
+
+// Admin types
+export type AdminStats = RouterOutputs["admin"]["getStats"];
+export type AdminUser = RouterOutputs["admin"]["getUsers"]["items"][number];
+
+// Auth types
+export type UserProfile = RouterOutputs["auth"]["getProfile"];

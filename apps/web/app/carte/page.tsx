@@ -26,6 +26,12 @@ import {
   GraduationCap,
   Landmark,
   Cross,
+  Siren,
+  Phone,
+  Clock,
+  BadgeCheck,
+  Mail,
+  User,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { trpc } from "@/lib/trpc";
@@ -53,11 +59,13 @@ const typeIcons: Record<LieuType, React.ReactNode> = {
   CLINIQUE: <Stethoscope className="w-4 h-4" />,
   CENTRE_SANTE: <Stethoscope className="w-4 h-4" />,
   ADMINISTRATION: <Building2 className="w-4 h-4" />,
-  MAIRIE: <Landmark className="w-4 h-4" />,
+  MAISON_COMMUNALE: <Landmark className="w-4 h-4" />,
   COMMISSARIAT: <Shield className="w-4 h-4" />,
+  POLICE: <Siren className="w-4 h-4" />,
   TRIBUNAL: <Scale className="w-4 h-4" />,
   ECOLE: <GraduationCap className="w-4 h-4" />,
   UNIVERSITE: <GraduationCap className="w-4 h-4" />,
+  GOUVERNORAT: <Landmark className="w-4 h-4" />,
   AUTRE: <MapPin className="w-4 h-4" />,
 };
 
@@ -66,11 +74,13 @@ const typeColors: Record<LieuType, string> = {
   CLINIQUE: "bg-red-400 text-white",
   CENTRE_SANTE: "bg-orange-500 text-white",
   ADMINISTRATION: "bg-blue-500 text-white",
-  MAIRIE: "bg-blue-600 text-white",
+  MAISON_COMMUNALE: "bg-blue-600 text-white",
   COMMISSARIAT: "bg-indigo-500 text-white",
+  POLICE: "bg-indigo-600 text-white",
   TRIBUNAL: "bg-purple-500 text-white",
   ECOLE: "bg-emerald-500 text-white",
   UNIVERSITE: "bg-emerald-600 text-white",
+  GOUVERNORAT: "bg-sky-500 text-white",
   AUTRE: "bg-gray-500 text-white",
 };
 
@@ -87,11 +97,17 @@ const filterGroups = [
     icon: <Building2 className="w-4 h-4" />,
     types: [
       "ADMINISTRATION",
-      "MAIRIE",
-      "COMMISSARIAT",
+      "MAISON_COMMUNALE",
+      "GOUVERNORAT",
       "TRIBUNAL",
     ] as LieuType[],
     color: "text-blue-600",
+  },
+  {
+    label: "Sécurité",
+    icon: <Shield className="w-4 h-4" />,
+    types: ["COMMISSARIAT", "POLICE"] as LieuType[],
+    color: "text-indigo-600",
   },
   {
     label: "Éducation",
@@ -114,15 +130,22 @@ interface Lieu {
   latitude: number | null;
   longitude: number | null;
   adresse: string | null;
+  telephone: string | null;
+  email: string | null;
+  horaires: Record<string, string> | null;
+  responsable: string | null;
   verified: boolean;
   commune?: { name: string } | null;
   _count?: { avis: number };
+  servicesProposed?: { nomService: string }[];
 }
 
 function CarteContent() {
   const router = useRouter();
   const [selectedLieu, setSelectedLieu] = useState<Lieu | null>(null);
-  const [selectedTypes, setSelectedTypes] = useState<LieuType[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<LieuType[]>([
+    "MAISON_COMMUNALE",
+  ]);
   const [showFilters, setShowFilters] = useState(false);
   const [showBoundaries, setShowBoundaries] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,8 +177,9 @@ function CarteContent() {
     }
   };
 
-  const handleMarkerClick = (lieu: Lieu) => {
-    setSelectedLieu(lieu);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleMarkerClick = (lieu: any) => {
+    setSelectedLieu(lieu as Lieu);
     if (lieu.latitude && lieu.longitude) {
       setViewport({
         latitude: lieu.latitude,
@@ -359,10 +383,10 @@ function CarteContent() {
 
         {/* Selected lieu panel */}
         {selectedLieu && (
-          <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-10 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/50 p-5 animate-slide-in-bottom">
+          <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-10 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/50 p-5 animate-slide-in-bottom max-h-[60vh] overflow-y-auto">
             <button
               onClick={clearSelection}
-              className="absolute top-3 right-3 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+              className="absolute top-3 right-3 p-1.5 hover:bg-gray-100 rounded-full transition-colors z-10"
             >
               <X className="w-4 h-4" />
             </button>
@@ -377,33 +401,114 @@ function CarteContent() {
                 <h3 className="font-bold text-foreground text-base leading-tight">
                   {selectedLieu.nom}
                 </h3>
-                <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md font-medium">
                     {LIEU_TYPE_LABELS[selectedLieu.type]}
                   </span>
                   {selectedLieu.verified && (
-                    <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-medium">
-                      ✓ Vérifié
+                    <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-medium flex items-center gap-1">
+                      <BadgeCheck className="w-3 h-3" /> Vérifié
                     </span>
                   )}
                 </div>
               </div>
             </div>
 
-            {selectedLieu.adresse && (
-              <p className="text-sm text-muted-foreground mt-3 flex items-start gap-2">
-                <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary" />
-                {selectedLieu.adresse}
-                {selectedLieu.commune && `, ${selectedLieu.commune.name}`}
-              </p>
-            )}
+            <div className="mt-3 space-y-2">
+              {selectedLieu.adresse && (
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary" />
+                  <span>
+                    {selectedLieu.adresse}
+                    {selectedLieu.commune && `, ${selectedLieu.commune.name}`}
+                  </span>
+                </p>
+              )}
 
-            {selectedLieu._count && selectedLieu._count.avis > 0 && (
-              <p className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                {selectedLieu._count.avis} avis
-              </p>
-            )}
+              {selectedLieu.telephone && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Phone className="w-4 h-4 flex-shrink-0 text-primary" />
+                  <a
+                    href={`tel:${selectedLieu.telephone}`}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {selectedLieu.telephone}
+                  </a>
+                </p>
+              )}
+
+              {selectedLieu.email && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Mail className="w-4 h-4 flex-shrink-0 text-primary" />
+                  <a
+                    href={`mailto:${selectedLieu.email}`}
+                    className="hover:text-primary transition-colors truncate"
+                  >
+                    {selectedLieu.email}
+                  </a>
+                </p>
+              )}
+
+              {selectedLieu.responsable && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <User className="w-4 h-4 flex-shrink-0 text-primary" />
+                  <span>{selectedLieu.responsable}</span>
+                </p>
+              )}
+
+              {selectedLieu.horaires &&
+                typeof selectedLieu.horaires === "object" && (
+                  <p className="text-sm text-muted-foreground flex items-start gap-2">
+                    <Clock className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary" />
+                    <span>
+                      {Object.entries(
+                        selectedLieu.horaires as Record<string, string>,
+                      )
+                        .slice(0, 2)
+                        .map(([jour, h]) => (
+                          <span key={jour} className="block">
+                            {jour}: {h}
+                          </span>
+                        ))}
+                      {Object.keys(
+                        selectedLieu.horaires as Record<string, string>,
+                      ).length > 2 && (
+                        <span className="text-xs text-primary">
+                          + voir tous les horaires
+                        </span>
+                      )}
+                    </span>
+                  </p>
+                )}
+
+              {selectedLieu._count && selectedLieu._count.avis > 0 && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  {selectedLieu._count.avis} avis
+                </p>
+              )}
+
+              {selectedLieu.servicesProposed &&
+                selectedLieu.servicesProposed.length > 0 && (
+                  <div className="mt-1">
+                    <div className="flex flex-wrap gap-1">
+                      {selectedLieu.servicesProposed.slice(0, 4).map((s, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md"
+                        >
+                          {s.nomService}
+                        </span>
+                      ))}
+                      {selectedLieu.servicesProposed.length > 4 && (
+                        <span className="text-[11px] px-2 py-0.5 bg-gray-50 text-gray-500 rounded-md">
+                          +{selectedLieu.servicesProposed.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+            </div>
 
             <div className="flex gap-2 mt-4">
               <Link href={`/lieux/${selectedLieu.id}`} className="flex-1">
