@@ -99,8 +99,37 @@ export default function HomePage() {
     limit: 5,
   });
 
+  // JSON-LD structured data for SEO
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Kin Services",
+    alternateName: "Services Publics de Kinshasa",
+    url: "https://kinshasa-seven.vercel.app",
+    description:
+      "Trouvez facilement les services publics à Kinshasa : communes, hôpitaux, commissariats, tribunaux, écoles. Prix officiels, documents requis et itinéraires.",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate:
+          "https://kinshasa-seven.vercel.app/recherche?q={search_term_string}",
+      },
+      "query-input": "required name=search_term_string",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Akili Group",
+    },
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* Structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Header />
 
       <main className="flex-1">
@@ -111,14 +140,14 @@ export default function HomePage() {
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary-light/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
 
-          {/* Large transparent logo watermark */}
-          <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-[10%] hidden md:block pointer-events-none">
+          {/* Large logo with transparent background */}
+          <div className="absolute top-1/2 right-4 lg:right-12 -translate-y-1/2 hidden md:block pointer-events-none">
             <Image
               src="/logo.png"
-              alt=""
+              alt="Kin Services"
               width={500}
               height={500}
-              className="opacity-[0.08] w-[400px] lg:w-[500px] h-auto select-none"
+              className="w-[280px] lg:w-[360px] h-auto select-none drop-shadow-2xl"
               priority
             />
           </div>

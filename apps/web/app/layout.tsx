@@ -5,29 +5,75 @@ import { TRPCProvider } from "@/lib/trpc-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const SITE_URL = "https://kinshasa-seven.vercel.app";
+const OG_IMAGE = `${SITE_URL}/api/og`;
+
 export const metadata: Metadata = {
-  title: "Kin Services - Services Publics de Kinshasa",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Kin Services — Guide des Services Publics de Kinshasa",
+    template: "%s | Kin Services",
+  },
   description:
-    "Trouvez facilement les services publics à Kinshasa : communes, hôpitaux, administrations, avec les prix officiels, documents requis et itinéraires.",
+    "Trouvez facilement les services publics à Kinshasa : communes, hôpitaux, commissariats, tribunaux, écoles. Prix officiels, documents requis, horaires et itinéraires.",
   keywords: [
     "Kinshasa",
     "services publics",
-    "communes",
-    "hôpitaux",
-    "administration",
-    "RDC",
+    "communes Kinshasa",
+    "hôpitaux Kinshasa",
+    "administration RDC",
+    "mairie Kinshasa",
+    "commissariat Kinshasa",
+    "acte de naissance Kinshasa",
+    "état civil RDC",
+    "carte interactive Kinshasa",
     "Congo",
+    "RDC",
+    "Kin Services",
   ],
   authors: [{ name: "Akili Group" }],
+  creator: "Akili Group",
+  publisher: "Akili Group",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   openGraph: {
-    title: "Kin Services - Services Publics de Kinshasa",
+    title: "Kin Services — Guide des Services Publics de Kinshasa",
     description:
-      "Trouvez facilement les services publics à Kinshasa avec les prix officiels et documents requis.",
-    url: "https://kinshasa-services.vercel.app",
+      "Communes, hôpitaux, administrations de Kinshasa — prix officiels, documents requis et itinéraires. Le guide citoyen de la ville-province.",
+    url: SITE_URL,
     siteName: "Kin Services",
     locale: "fr_CD",
     type: "website",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "Kin Services - Services Publics de Kinshasa",
+        type: "image/png",
+      },
+    ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kin Services — Guide des Services Publics de Kinshasa",
+    description:
+      "Communes, hôpitaux, administrations — trouvez les services publics de Kinshasa avec prix officiels et itinéraires.",
+    images: [OG_IMAGE],
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+  category: "government",
 };
 
 export default function RootLayout({
