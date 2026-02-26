@@ -285,4 +285,4 @@ $$;
 -- CREATE POLICY "Public read access" ON lieux FOR SELECT USING (true);
 -- CREATE POLICY "Public read access" ON services_proposes FOR SELECT USING (true);
 
-RAISE NOTICE 'Schema créé avec succès!';
+-- Schema créé avec succès!

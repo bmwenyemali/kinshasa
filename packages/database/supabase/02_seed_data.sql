@@ -464,20 +464,13 @@ VALUES
 ('Nouveaux horaires - Hôtel de Ville', 'L''Hôtel de Ville adopte de nouveaux horaires: 7h30-14h30 à partir du 1er mars.', 'info', '2026-03-01', NULL, true);
 
 -- ============================================
--- MESSAGE DE CONFIRMATION
+-- ✅ Données insérées avec succès!
+-- Résumé:
+-- - 24 communes
+-- - 35 zones de santé
+-- - ~20 quartiers exemple
+-- - 8 lieux (hôpitaux, administrations, écoles)
+-- - 8 services proposés
+-- - 7 avis utilisateurs
+-- - 3 alertes
 -- ============================================
-
-DO $$
-BEGIN
-    RAISE NOTICE '';
-    RAISE NOTICE '✅ Données insérées avec succès!';
-    RAISE NOTICE '';
-    RAISE NOTICE 'Résumé:';
-    RAISE NOTICE '- 24 communes';
-    RAISE NOTICE '- 35 zones de santé';
-    RAISE NOTICE '- ~20 quartiers exemple';
-    RAISE NOTICE '- 8 lieux (hôpitaux, administrations, écoles)';
-    RAISE NOTICE '- 8 services proposés';
-    RAISE NOTICE '- 7 avis utilisateurs';
-    RAISE NOTICE '- 3 alertes';
-END $$;
