@@ -6,6 +6,7 @@ import React, {
   useRef,
   useEffect,
   Suspense,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -150,6 +151,46 @@ function CarteContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [showBoundaries, setShowBoundaries] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Draggable legend state
+  const [legendPos, setLegendPos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const legendDragging = useRef(false);
+  const legendOffset = useRef({ x: 0, y: 0 });
+  const legendRef = useRef<HTMLDivElement>(null);
+
+  const onLegendPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      legendDragging.current = true;
+      const rect = legendRef.current?.getBoundingClientRect();
+      if (rect) {
+        legendOffset.current = {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        };
+      }
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [],
+  );
+
+  const onLegendPointerMove = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (!legendDragging.current) return;
+      const parent = legendRef.current?.parentElement;
+      if (!parent) return;
+      const parentRect = parent.getBoundingClientRect();
+      const x = e.clientX - parentRect.left - legendOffset.current.x;
+      const y = e.clientY - parentRect.top - legendOffset.current.y;
+      setLegendPos({ x, y });
+    },
+    [],
+  );
+
+  const onLegendPointerUp = useCallback(() => {
+    legendDragging.current = false;
+  }, []);
 
   const [viewport, setViewport] = useState({
     latitude: -4.375,
@@ -536,12 +577,26 @@ function CarteContent() {
           </div>
         )}
 
-        {/* Legend (bottom right, above stats) */}
+        {/* Draggable Legend */}
         {!selectedLieu && !showFilters && (
-          <div className="absolute bottom-16 right-3 z-10 hidden md:block">
-            <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-white/50 p-3">
+          <div
+            ref={legendRef}
+            className="absolute z-10 hidden md:block touch-none select-none"
+            style={
+              legendPos
+                ? { left: legendPos.x, top: legendPos.y }
+                : { bottom: 80, left: 12 }
+            }
+            onPointerDown={onLegendPointerDown}
+            onPointerMove={onLegendPointerMove}
+            onPointerUp={onLegendPointerUp}
+          >
+            <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-lg border border-white/50 p-3 cursor-grab active:cursor-grabbing">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                Légende
+                ⠿ Légende{" "}
+                <span className="normal-case font-normal opacity-60">
+                  (déplaçable)
+                </span>
               </p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                 {Object.entries(LIEU_TYPE_LABELS).map(([type, label]) => (

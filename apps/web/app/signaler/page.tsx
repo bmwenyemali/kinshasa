@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Header, Footer } from "@/components/layout/Header";
 import { trpc } from "@/lib/trpc";
 import {
@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   HelpCircle,
   X as XIcon,
+  Search,
 } from "lucide-react";
 
 const TYPES = [
@@ -63,7 +64,31 @@ export default function SignalerPage() {
   const [email, setEmail] = useState("");
   const [destination, setDestination] = useState("");
   const [localisation, setLocalisation] = useState("");
+  const [locQuery, setLocQuery] = useState("");
+  const [showLocDropdown, setShowLocDropdown] = useState(false);
+  const locRef = useRef<HTMLDivElement>(null);
   const [submitted, setSubmitted] = useState(false);
+
+  // Autocomplete queries for communes and quartiers
+  const { data: communeResults } = trpc.communes.search.useQuery(
+    { query: locQuery },
+    { enabled: locQuery.length >= 1 },
+  );
+  const { data: quartierResults } = trpc.quartiers.search.useQuery(
+    { query: locQuery },
+    { enabled: locQuery.length >= 1 },
+  );
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (locRef.current && !locRef.current.contains(e.target as Node)) {
+        setShowLocDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const createMutation = trpc.signalements.create.useMutation({
     onSuccess: () => {
@@ -180,13 +205,92 @@ export default function SignalerPage() {
                       <MapPin className="w-4 h-4 inline mr-1" />
                       Localisation (optionnel)
                     </label>
-                    <input
-                      type="text"
-                      value={localisation}
-                      onChange={(e) => setLocalisation(e.target.value)}
-                      placeholder="Ex: Avenue Lumumba, Commune de Gombe"
-                      className="w-full px-4 py-2.5 rounded-xl border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
-                    />
+                    <div ref={locRef} className="relative">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={localisation}
+                          onChange={(e) => {
+                            setLocalisation(e.target.value);
+                            setLocQuery(e.target.value);
+                            setShowLocDropdown(true);
+                          }}
+                          onFocus={() =>
+                            locQuery.length >= 1 && setShowLocDropdown(true)
+                          }
+                          placeholder="Tapez une commune ou un quartier (ex: Barumbu, Ozone...)"
+                          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                          autoComplete="off"
+                        />
+                      </div>
+                      {showLocDropdown && locQuery.length >= 1 && (
+                        <div className="absolute z-20 w-full mt-1 bg-white rounded-xl border border-border shadow-xl max-h-60 overflow-y-auto">
+                          {/* Communes */}
+                          {communeResults && communeResults.length > 0 && (
+                            <div>
+                              <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                Communes
+                              </p>
+                              {communeResults.map((c) => (
+                                <button
+                                  key={c.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setLocalisation(`Commune de ${c.name}`);
+                                    setShowLocDropdown(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-primary/5 text-sm flex items-center gap-2 transition-colors"
+                                >
+                                  <MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                                  <span className="font-medium">{c.name}</span>
+                                  <span className="text-xs text-muted-foreground ml-auto">
+                                    Commune
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {/* Quartiers */}
+                          {quartierResults && quartierResults.length > 0 && (
+                            <div>
+                              <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                Quartiers
+                              </p>
+                              {quartierResults.map((q) => (
+                                <button
+                                  key={q.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setLocalisation(
+                                      `Q/${q.name}${q.commune ? `, ${q.commune.name}` : ""}`,
+                                    );
+                                    setShowLocDropdown(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-primary/5 text-sm flex items-center gap-2 transition-colors"
+                                >
+                                  <MapPin className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                                  <span className="font-medium">{q.name}</span>
+                                  {q.commune && (
+                                    <span className="text-xs text-muted-foreground ml-auto">
+                                      {q.commune.name}
+                                    </span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {/* No results */}
+                          {(!communeResults || communeResults.length === 0) &&
+                            (!quartierResults ||
+                              quartierResults.length === 0) && (
+                              <p className="px-3 py-3 text-sm text-muted-foreground text-center">
+                                Aucun résultat pour &ldquo;{locQuery}&rdquo;
+                              </p>
+                            )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Building2,
   FileText,
@@ -109,6 +110,18 @@ export default function HomePage() {
           <div className="absolute inset-0 hero-pattern" />
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary-light/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
+
+          {/* Large transparent logo watermark */}
+          <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-[10%] hidden md:block pointer-events-none">
+            <Image
+              src="/logo.png"
+              alt=""
+              width={500}
+              height={500}
+              className="opacity-[0.08] w-[400px] lg:w-[500px] h-auto select-none"
+              priority
+            />
+          </div>
 
           <div className="relative container mx-auto max-w-6xl px-4 py-16 md:py-24">
             <div className="flex items-center gap-2 mb-4">
