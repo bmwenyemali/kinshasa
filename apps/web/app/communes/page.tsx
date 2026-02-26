@@ -56,7 +56,7 @@ export default function CommunesPage() {
               </div>
             ) : filteredCommunes && filteredCommunes.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filteredCommunes.map((commune) => (
+                {filteredCommunes?.map((commune) => (
                   <Link key={commune.id} href={`/communes/${commune.id}`}>
                     <div className="bg-white rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all p-5 h-full group">
                       <div className="flex items-start justify-between mb-3">
