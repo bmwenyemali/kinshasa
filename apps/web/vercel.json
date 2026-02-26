@@ -5,15 +5,6 @@
   "framework": "nextjs",
   "outputDirectory": ".next",
   "regions": ["cdg1"],
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "DIRECT_URL": "@direct-url",
-    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN": "@mapbox-token",
-    "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME": "@cloudinary-cloud-name",
-    "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "@cloudinary-upload-preset"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
