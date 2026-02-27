@@ -165,6 +165,36 @@ export const adminRouter = router({
       });
     }),
 
+  // List all lieux (admin)
+  getLieux: publicProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          type: z.string().optional(),
+          page: z.number().default(1),
+          limit: z.number().default(50),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const { search, type, page = 1, limit = 50 } = input || {};
+      const where: any = {};
+      if (search) where.nom = { contains: search, mode: "insensitive" };
+      if (type) where.type = type;
+      const [items, total] = await Promise.all([
+        ctx.prisma.lieu.findMany({
+          where,
+          include: { commune: { select: { name: true } } },
+          orderBy: { nom: "asc" },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        ctx.prisma.lieu.count({ where }),
+      ]);
+      return { items, total };
+    }),
+
   // CRUD for lieux
   createLieu: publicProcedure
     .input(

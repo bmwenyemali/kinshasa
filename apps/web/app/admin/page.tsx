@@ -1404,48 +1404,7 @@ export default function AdminPage() {
         )}
 
         {/* LIEUX TAB */}
-        {activeTab === "lieux" && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl border border-border p-6">
-              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary" />
-                Gestion des Lieux
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Gérez les lieux enregistrés sur la plateforme. Vous pouvez
-                ajouter, modifier ou supprimer des lieux depuis cette interface.
-              </p>
-
-              {stats && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {stats.lieuxByType.map((item) => (
-                    <div key={item.type} className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-lg font-bold text-foreground">
-                        {item.count}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {LIEU_TYPE_LABELS[
-                          item.type as keyof typeof LIEU_TYPE_LABELS
-                        ] || item.type}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="text-sm text-muted-foreground bg-blue-50 rounded-lg p-4">
-                <p className="font-medium text-blue-800 mb-1">
-                  💡 Pour ajouter des lieux
-                </p>
-                <p className="text-blue-700">
-                  Utilisez la page Carte pour visualiser les lieux existants.
-                  Les gestionnaires peuvent proposer de nouveaux lieux via leur
-                  interface dédiée.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === "lieux" && <AdminLieuxTab />}
 
         {/* PROJETS TAB */}
         {activeTab === "projets" && (
@@ -1520,6 +1479,7 @@ const CATEGORIES = [
 function AdminDocumentsTab() {
   const [search, setSearch] = useState("");
   const [editDoc, setEditDoc] = useState<any>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const { data, isLoading } = trpc.admin.getDocuments.useQuery({
     search: search || undefined,
   });
@@ -1533,6 +1493,12 @@ function AdminDocumentsTab() {
       setEditDoc(null);
     },
   });
+  const createMut = trpc.admin.createDocument.useMutation({
+    onSuccess: () => {
+      utils.admin.getDocuments.invalidate();
+      setShowCreate(false);
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -1541,6 +1507,12 @@ function AdminDocumentsTab() {
           <ScrollText className="w-5 h-5 text-primary" />
           Documents référence ({data?.total || 0})
         </h3>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" /> Nouveau document
+        </button>
       </div>
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1668,6 +1640,38 @@ function AdminDocumentsTab() {
           saving={updateMut.isPending}
         />
       )}
+
+      {/* Create Document Modal */}
+      {showCreate && (
+        <EditDocumentModal
+          doc={{
+            nom: "",
+            slug: "",
+            categorie: "ETAT_CIVIL",
+            description: "",
+            definition: "",
+            role: "",
+            prixEstimatif: "",
+            devise: "FC",
+            delaiEstimatif: "",
+            procedure: "",
+            ouObtenir: "",
+            conseils: "",
+            baseJuridique: "",
+            commentaire: "",
+          }}
+          onClose={() => setShowCreate(false)}
+          onSave={(vals) => {
+            const slug = (vals.nom || "document")
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-|-$/g, "");
+            createMut.mutate({ ...vals, slug });
+          }}
+          saving={createMut.isPending}
+          title="Nouveau document"
+        />
+      )}
     </div>
   );
 }
@@ -1677,11 +1681,13 @@ function EditDocumentModal({
   onClose,
   onSave,
   saving,
+  title,
 }: {
   doc: any;
   onClose: () => void;
   onSave: (vals: any) => void;
   saving: boolean;
+  title?: string;
 }) {
   const [form, setForm] = useState({
     nom: doc.nom || "",
@@ -1707,7 +1713,7 @@ function EditDocumentModal({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white rounded-t-2xl z-10">
           <h3 className="text-lg font-bold text-foreground">
-            Modifier le document
+            {title || "Modifier le document"}
           </h3>
           <button
             onClick={onClose}
@@ -1905,9 +1911,23 @@ function EditDocumentModal({
 function AdminServicesTab() {
   const [search, setSearch] = useState("");
   const [editSvc, setEditSvc] = useState<any>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newSvc, setNewSvc] = useState({
+    nomService: "",
+    categorie: "ETAT_CIVIL",
+    description: "",
+    lieuId: "",
+    prixOfficiel: 0,
+    devise: "FC",
+    delai: "",
+    documentsRequis: "",
+    procedure: "",
+    conditionsParticulieres: "",
+  });
   const { data, isLoading } = trpc.admin.getServices.useQuery({
     search: search || undefined,
   });
+  const { data: lieuxData } = trpc.admin.getServices.useQuery({});
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteService.useMutation({
     onSuccess: () => utils.admin.getServices.invalidate(),
@@ -1918,6 +1938,24 @@ function AdminServicesTab() {
       setEditSvc(null);
     },
   });
+  const createMut = trpc.admin.createService.useMutation({
+    onSuccess: () => {
+      utils.admin.getServices.invalidate();
+      setShowCreate(false);
+      setNewSvc({
+        nomService: "",
+        categorie: "ETAT_CIVIL",
+        description: "",
+        lieuId: "",
+        prixOfficiel: 0,
+        devise: "FC",
+        delai: "",
+        documentsRequis: "",
+        procedure: "",
+        conditionsParticulieres: "",
+      });
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -1926,7 +1964,182 @@ function AdminServicesTab() {
           <FileText className="w-5 h-5 text-primary" />
           Services ({data?.total || 0})
         </h3>
+        <button
+          onClick={() => setShowCreate(!showCreate)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" /> Nouveau service
+        </button>
       </div>
+
+      {/* Inline Create Form */}
+      {showCreate && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
+          <h4 className="font-bold text-sm text-blue-800">Créer un service</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Nom du service *
+              </label>
+              <input
+                value={newSvc.nomService}
+                onChange={(e) =>
+                  setNewSvc((p) => ({ ...p, nomService: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+                placeholder="Ex: Achat d'une parcelle"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Catégorie *
+              </label>
+              <select
+                value={newSvc.categorie}
+                onChange={(e) =>
+                  setNewSvc((p) => ({ ...p, categorie: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                ID du lieu (UUID) *
+              </label>
+              <input
+                value={newSvc.lieuId}
+                onChange={(e) =>
+                  setNewSvc((p) => ({ ...p, lieuId: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+                placeholder="UUID du lieu"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Prix officiel
+              </label>
+              <input
+                type="number"
+                value={newSvc.prixOfficiel}
+                onChange={(e) =>
+                  setNewSvc((p) => ({
+                    ...p,
+                    prixOfficiel: Number(e.target.value),
+                  }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Devise
+              </label>
+              <input
+                value={newSvc.devise}
+                onChange={(e) =>
+                  setNewSvc((p) => ({ ...p, devise: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Délai
+              </label>
+              <input
+                value={newSvc.delai}
+                onChange={(e) =>
+                  setNewSvc((p) => ({ ...p, delai: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+                placeholder="Ex: 3 à 5 jours"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Description
+            </label>
+            <textarea
+              value={newSvc.description}
+              onChange={(e) =>
+                setNewSvc((p) => ({ ...p, description: e.target.value }))
+              }
+              rows={2}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Documents requis (un par ligne)
+            </label>
+            <textarea
+              value={newSvc.documentsRequis}
+              onChange={(e) =>
+                setNewSvc((p) => ({ ...p, documentsRequis: e.target.value }))
+              }
+              rows={3}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm font-mono"
+              placeholder={"Carte d'identité\nActe de naissance"}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Procédure
+            </label>
+            <textarea
+              value={newSvc.procedure}
+              onChange={(e) =>
+                setNewSvc((p) => ({ ...p, procedure: e.target.value }))
+              }
+              rows={4}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm font-mono"
+            />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => setShowCreate(false)}
+              className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => {
+                if (!newSvc.nomService || !newSvc.lieuId) {
+                  alert("Nom et ID lieu sont requis");
+                  return;
+                }
+                createMut.mutate({
+                  lieuId: newSvc.lieuId,
+                  nomService: newSvc.nomService,
+                  categorie: newSvc.categorie,
+                  description: newSvc.description || undefined,
+                  prixOfficiel: newSvc.prixOfficiel || undefined,
+                  devise: newSvc.devise,
+                  delai: newSvc.delai || undefined,
+                  documentsRequis: newSvc.documentsRequis
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                  procedure: newSvc.procedure || undefined,
+                });
+              }}
+              disabled={createMut.isPending}
+              className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />{" "}
+              {createMut.isPending ? "Création..." : "Créer"}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
@@ -2252,6 +2465,153 @@ function EditServiceModal({
   );
 }
 
+function AdminLieuxTab() {
+  const { data, isLoading } = trpc.admin.getLieux.useQuery({});
+  const { data: communes } = trpc.admin.getCommunes.useQuery({});
+  const utils = trpc.useUtils();
+  const deleteMut = trpc.admin.deleteLieu.useMutation({
+    onSuccess: () => { utils.admin.getLieux.invalidate(); utils.admin.getStats.invalidate(); },
+  });
+  const updateMut = trpc.admin.updateLieu.useMutation({
+    onSuccess: () => utils.admin.getLieux.invalidate(),
+  });
+  const createMut = trpc.admin.createLieu.useMutation({
+    onSuccess: () => {
+      utils.admin.getLieux.invalidate();
+      utils.admin.getStats.invalidate();
+      setShowCreate(false);
+      setNewLieu({ nom: "", type: "ADMINISTRATION", communeId: "", adresse: "", telephone: "", responsable: "" });
+    },
+  });
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newLieu, setNewLieu] = useState({ nom: "", type: "ADMINISTRATION", communeId: "", adresse: "", telephone: "", responsable: "" });
+  const [editLieu, setEditLieu] = useState<any>(null);
+
+  const lieuTypes = Object.entries(LIEU_TYPE_LABELS);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <MapPin className="w-5 h-5 text-primary" />
+          Lieux ({data?.total || 0})
+        </h3>
+        <button onClick={() => setShowCreate(!showCreate)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90">
+          <Plus className="w-4 h-4" /> Nouveau lieu
+        </button>
+      </div>
+
+      {/* Create form */}
+      {showCreate && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 space-y-3">
+          <h4 className="font-bold text-sm text-emerald-800">Nouveau lieu</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Nom *</label>
+              <input value={newLieu.nom} onChange={e => setNewLieu(p => ({ ...p, nom: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Type *</label>
+              <select value={newLieu.type} onChange={e => setNewLieu(p => ({ ...p, type: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm">
+                {lieuTypes.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Commune</label>
+              <select value={newLieu.communeId} onChange={e => setNewLieu(p => ({ ...p, communeId: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm">
+                <option value="">— Aucune —</option>
+                {communes?.items?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Adresse</label>
+              <input value={newLieu.adresse} onChange={e => setNewLieu(p => ({ ...p, adresse: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Téléphone</label>
+              <input value={newLieu.telephone} onChange={e => setNewLieu(p => ({ ...p, telephone: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Responsable</label>
+              <input value={newLieu.responsable} onChange={e => setNewLieu(p => ({ ...p, responsable: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm" />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-gray-50">Annuler</button>
+            <button onClick={() => { if (!newLieu.nom) return; createMut.mutate({ nom: newLieu.nom, type: newLieu.type, communeId: newLieu.communeId || undefined, adresse: newLieu.adresse || undefined, telephone: newLieu.telephone || undefined, responsable: newLieu.responsable || undefined, verified: true }); }} disabled={createMut.isPending} className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
+              <Save className="w-4 h-4" /> {createMut.isPending ? "Création..." : "Créer"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-gray-50">
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Nom</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Commune</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Adresse</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Responsable</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.items.map((l: any) => (
+                <tr key={l.id} className="border-b border-border hover:bg-gray-50">
+                  {editLieu?.id === l.id ? (
+                    <>
+                      <td className="py-2 px-4"><input value={editLieu.nom} onChange={e => setEditLieu((p: any) => ({ ...p, nom: e.target.value }))} className="w-full px-2 py-1 rounded border border-border text-sm" /></td>
+                      <td className="py-2 px-4">
+                        <select value={editLieu.type} onChange={e => setEditLieu((p: any) => ({ ...p, type: e.target.value }))} className="w-full px-2 py-1 rounded border border-border text-sm">
+                          {lieuTypes.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+                        </select>
+                      </td>
+                      <td className="py-2 px-4 text-xs">{l.commune?.name || "—"}</td>
+                      <td className="py-2 px-4"><input value={editLieu.adresse || ""} onChange={e => setEditLieu((p: any) => ({ ...p, adresse: e.target.value }))} className="w-full px-2 py-1 rounded border border-border text-sm" /></td>
+                      <td className="py-2 px-4"><input value={editLieu.responsable || ""} onChange={e => setEditLieu((p: any) => ({ ...p, responsable: e.target.value }))} className="w-full px-2 py-1 rounded border border-border text-sm" /></td>
+                      <td className="py-2 px-4 flex items-center gap-1">
+                        <button onClick={() => { updateMut.mutate({ id: l.id, nom: editLieu.nom, type: editLieu.type, adresse: editLieu.adresse || undefined, responsable: editLieu.responsable || undefined }); setEditLieu(null); }} className="p-1.5 hover:bg-emerald-50 rounded-lg"><Save className="w-4 h-4 text-emerald-600" /></button>
+                        <button onClick={() => setEditLieu(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4 text-muted-foreground" /></button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="py-3 px-4 font-medium text-foreground">{l.nom}</td>
+                      <td className="py-3 px-4 text-xs">{LIEU_TYPE_LABELS[l.type as keyof typeof LIEU_TYPE_LABELS] || l.type}</td>
+                      <td className="py-3 px-4 text-xs">{l.commune?.name || "—"}</td>
+                      <td className="py-3 px-4 text-xs">{l.adresse || "—"}</td>
+                      <td className="py-3 px-4 text-xs">{l.responsable || "—"}</td>
+                      <td className="py-3 px-4 flex items-center gap-1">
+                        <button onClick={() => setEditLieu({ id: l.id, nom: l.nom, type: l.type, adresse: l.adresse, responsable: l.responsable })} className="p-1.5 hover:bg-blue-50 rounded-lg" title="Modifier">
+                          <Edit3 className="w-4 h-4 text-blue-500" />
+                        </button>
+                        <button onClick={() => { if (confirm("Supprimer ce lieu ?")) deleteMut.mutate({ id: l.id }); }} className="p-1.5 hover:bg-red-50 rounded-lg" title="Supprimer">
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(!data?.items || data.items.length === 0) && (
+            <p className="text-sm text-muted-foreground text-center py-8">Aucun lieu trouvé</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminCommunesTab() {
   const { data: communes, isLoading } = trpc.admin.getCommunes.useQuery({});
   const { data: districts } = trpc.admin.getDistricts.useQuery();
@@ -2259,33 +2619,324 @@ function AdminCommunesTab() {
   const deleteMut = trpc.admin.deleteCommune.useMutation({
     onSuccess: () => utils.admin.getCommunes.invalidate(),
   });
+  const updateMut = trpc.admin.updateCommune.useMutation({
+    onSuccess: () => utils.admin.getCommunes.invalidate(),
+  });
+  const createMut = trpc.admin.createCommune.useMutation({
+    onSuccess: () => {
+      utils.admin.getCommunes.invalidate();
+      setShowCreate(false);
+      setNewCommune({
+        name: "",
+        population: 0,
+        superficie: 0,
+        bourgmestre: "",
+        districtId: "",
+        description: "",
+      });
+    },
+  });
+  // District CRUD
+  const createDistrictMut = trpc.admin.createDistrict.useMutation({
+    onSuccess: () => {
+      utils.admin.getDistricts.invalidate();
+      setNewDistrict({ name: "", description: "" });
+    },
+  });
+  const updateDistrictMut = trpc.admin.updateDistrict.useMutation({
+    onSuccess: () => {
+      utils.admin.getDistricts.invalidate();
+      setEditDistrict(null);
+    },
+  });
+  const deleteDistrictMut = trpc.admin.deleteDistrict.useMutation({
+    onSuccess: () => utils.admin.getDistricts.invalidate(),
+  });
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newCommune, setNewCommune] = useState({
+    name: "",
+    population: 0,
+    superficie: 0,
+    bourgmestre: "",
+    districtId: "",
+    description: "",
+  });
+  const [editCommune, setEditCommune] = useState<any>(null);
+  const [editDistrict, setEditDistrict] = useState<any>(null);
+  const [newDistrict, setNewDistrict] = useState({ name: "", description: "" });
+  const [showCreateDistrict, setShowCreateDistrict] = useState(false);
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-        <Building2 className="w-5 h-5 text-primary" />
-        Communes ({communes?.total || 0}) & Districts ({districts?.length || 0})
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-primary" />
+          Communes ({communes?.total || 0}) & Districts (
+          {districts?.length || 0})
+        </h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowCreateDistrict(!showCreateDistrict)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-gray-50"
+          >
+            <Plus className="w-4 h-4" /> District
+          </button>
+          <button
+            onClick={() => setShowCreate(!showCreate)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90"
+          >
+            <Plus className="w-4 h-4" /> Commune
+          </button>
+        </div>
+      </div>
 
-      {/* Districts overview */}
+      {/* Create District inline */}
+      {showCreateDistrict && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3 items-end">
+          <div className="flex-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Nom du district *
+            </label>
+            <input
+              value={newDistrict.name}
+              onChange={(e) =>
+                setNewDistrict((p) => ({ ...p, name: e.target.value }))
+              }
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-xs font-medium text-muted-foreground">
+              Description
+            </label>
+            <input
+              value={newDistrict.description}
+              onChange={(e) =>
+                setNewDistrict((p) => ({ ...p, description: e.target.value }))
+              }
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <button
+            onClick={() => {
+              if (newDistrict.name) createDistrictMut.mutate(newDistrict);
+            }}
+            disabled={createDistrictMut.isPending}
+            className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 disabled:opacity-50"
+          >
+            Créer
+          </button>
+          <button
+            onClick={() => setShowCreateDistrict(false)}
+            className="px-3 py-2 rounded-lg border border-border text-sm hover:bg-gray-50"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
+
+      {/* Districts overview with edit/delete */}
       {districts && districts.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {districts.map((d) => (
+          {districts.map((d: any) => (
             <div
               key={d.id}
               className="bg-white rounded-xl border border-border p-4"
             >
-              <h4 className="font-bold text-foreground">{d.name}</h4>
-              <p className="text-sm text-muted-foreground">
-                {d._count.communes} communes
-              </p>
-              {d.description && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {d.description}
-                </p>
+              {editDistrict?.id === d.id ? (
+                <div className="space-y-2">
+                  <input
+                    value={editDistrict.name}
+                    onChange={(e) =>
+                      setEditDistrict((p: any) => ({
+                        ...p,
+                        name: e.target.value,
+                      }))
+                    }
+                    className="w-full px-2 py-1 rounded border border-border text-sm"
+                  />
+                  <input
+                    value={editDistrict.description || ""}
+                    onChange={(e) =>
+                      setEditDistrict((p: any) => ({
+                        ...p,
+                        description: e.target.value,
+                      }))
+                    }
+                    className="w-full px-2 py-1 rounded border border-border text-sm"
+                    placeholder="Description"
+                  />
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() =>
+                        updateDistrictMut.mutate({
+                          id: d.id,
+                          name: editDistrict.name,
+                          description: editDistrict.description || undefined,
+                        })
+                      }
+                      className="px-2 py-1 bg-primary text-white rounded text-xs"
+                    >
+                      Sauver
+                    </button>
+                    <button
+                      onClick={() => setEditDistrict(null)}
+                      className="px-2 py-1 border rounded text-xs"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h4 className="font-bold text-foreground">{d.name}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {d._count.communes} communes
+                  </p>
+                  {d.description && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {d.description}
+                    </p>
+                  )}
+                  <div className="flex gap-1 mt-2">
+                    <button
+                      onClick={() =>
+                        setEditDistrict({
+                          id: d.id,
+                          name: d.name,
+                          description: d.description,
+                        })
+                      }
+                      className="p-1 hover:bg-blue-50 rounded"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-blue-500" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm("Supprimer ce district ?"))
+                          deleteDistrictMut.mutate({ id: d.id });
+                      }}
+                      className="p-1 hover:bg-red-50 rounded"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Create Commune inline */}
+      {showCreate && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 space-y-3">
+          <h4 className="font-bold text-sm text-emerald-800">
+            Nouvelle commune
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Nom *
+              </label>
+              <input
+                value={newCommune.name}
+                onChange={(e) =>
+                  setNewCommune((p) => ({ ...p, name: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                District
+              </label>
+              <select
+                value={newCommune.districtId}
+                onChange={(e) =>
+                  setNewCommune((p) => ({ ...p, districtId: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
+                <option value="">— Aucun —</option>
+                {districts?.map((d: any) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Bourgmestre
+              </label>
+              <input
+                value={newCommune.bourgmestre}
+                onChange={(e) =>
+                  setNewCommune((p) => ({ ...p, bourgmestre: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Population
+              </label>
+              <input
+                type="number"
+                value={newCommune.population}
+                onChange={(e) =>
+                  setNewCommune((p) => ({
+                    ...p,
+                    population: Number(e.target.value),
+                  }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Superficie (km²)
+              </label>
+              <input
+                type="number"
+                value={newCommune.superficie}
+                onChange={(e) =>
+                  setNewCommune((p) => ({
+                    ...p,
+                    superficie: Number(e.target.value),
+                  }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => setShowCreate(false)}
+              className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => {
+                if (!newCommune.name) return;
+                createMut.mutate({
+                  name: newCommune.name,
+                  population: newCommune.population || undefined,
+                  superficie: newCommune.superficie || undefined,
+                  bourgmestre: newCommune.bourgmestre || undefined,
+                  districtId: newCommune.districtId || undefined,
+                });
+              }}
+              disabled={createMut.isPending}
+              className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />{" "}
+              {createMut.isPending ? "Création..." : "Créer"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -2321,27 +2972,135 @@ function AdminCommunesTab() {
                   key={c.id}
                   className="border-b border-border hover:bg-gray-50"
                 >
-                  <td className="py-3 px-4 font-medium text-foreground">
-                    {c.name}
-                  </td>
-                  <td className="py-3 px-4 text-xs">
-                    {c.district?.name || "—"}
-                  </td>
-                  <td className="py-3 px-4 text-xs">{c.bourgmestre || "—"}</td>
-                  <td className="py-3 px-4 text-xs">
-                    {c.population ? Number(c.population).toLocaleString() : "—"}
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => {
-                        if (confirm("Supprimer cette commune ?"))
-                          deleteMut.mutate({ id: c.id });
-                      }}
-                      className="p-1.5 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
-                  </td>
+                  {editCommune?.id === c.id ? (
+                    <>
+                      <td className="py-2 px-4">
+                        <input
+                          value={editCommune.name}
+                          onChange={(e) =>
+                            setEditCommune((p: any) => ({
+                              ...p,
+                              name: e.target.value,
+                            }))
+                          }
+                          className="w-full px-2 py-1 rounded border border-border text-sm"
+                        />
+                      </td>
+                      <td className="py-2 px-4">
+                        <select
+                          value={editCommune.districtId || ""}
+                          onChange={(e) =>
+                            setEditCommune((p: any) => ({
+                              ...p,
+                              districtId: e.target.value,
+                            }))
+                          }
+                          className="w-full px-2 py-1 rounded border border-border text-sm"
+                        >
+                          <option value="">—</option>
+                          {districts?.map((d: any) => (
+                            <option key={d.id} value={d.id}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-2 px-4">
+                        <input
+                          value={editCommune.bourgmestre || ""}
+                          onChange={(e) =>
+                            setEditCommune((p: any) => ({
+                              ...p,
+                              bourgmestre: e.target.value,
+                            }))
+                          }
+                          className="w-full px-2 py-1 rounded border border-border text-sm"
+                        />
+                      </td>
+                      <td className="py-2 px-4">
+                        <input
+                          type="number"
+                          value={editCommune.population || ""}
+                          onChange={(e) =>
+                            setEditCommune((p: any) => ({
+                              ...p,
+                              population: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full px-2 py-1 rounded border border-border text-sm"
+                        />
+                      </td>
+                      <td className="py-2 px-4 flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            updateMut.mutate({
+                              id: c.id,
+                              name: editCommune.name,
+                              bourgmestre: editCommune.bourgmestre || undefined,
+                              population: editCommune.population || undefined,
+                              districtId: editCommune.districtId || undefined,
+                            });
+                            setEditCommune(null);
+                          }}
+                          className="p-1.5 hover:bg-emerald-50 rounded-lg"
+                        >
+                          <Save className="w-4 h-4 text-emerald-600" />
+                        </button>
+                        <button
+                          onClick={() => setEditCommune(null)}
+                          className="p-1.5 hover:bg-gray-100 rounded-lg"
+                        >
+                          <X className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="py-3 px-4 font-medium text-foreground">
+                        {c.name}
+                      </td>
+                      <td className="py-3 px-4 text-xs">
+                        {c.district?.name || "—"}
+                      </td>
+                      <td className="py-3 px-4 text-xs">
+                        {c.bourgmestre || "—"}
+                      </td>
+                      <td className="py-3 px-4 text-xs">
+                        {c.population
+                          ? Number(c.population).toLocaleString()
+                          : "—"}
+                      </td>
+                      <td className="py-3 px-4 flex items-center gap-1">
+                        <button
+                          onClick={() =>
+                            setEditCommune({
+                              id: c.id,
+                              name: c.name,
+                              bourgmestre: c.bourgmestre,
+                              population: c.population
+                                ? Number(c.population)
+                                : 0,
+                              districtId: c.districtId || "",
+                            })
+                          }
+                          className="p-1.5 hover:bg-blue-50 rounded-lg"
+                          title="Modifier"
+                        >
+                          <Edit3 className="w-4 h-4 text-blue-500" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm("Supprimer cette commune ?"))
+                              deleteMut.mutate({ id: c.id });
+                          }}
+                          className="p-1.5 hover:bg-red-50 rounded-lg"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
