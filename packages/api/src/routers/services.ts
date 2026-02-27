@@ -85,11 +85,6 @@ export const serviceRouter = router({
       if (input.communeId) {
         where.lieu = {
           communeId: input.communeId,
-          verified: true,
-        };
-      } else {
-        where.lieu = {
-          verified: true,
         };
       }
 
@@ -123,9 +118,6 @@ export const serviceRouter = router({
         where: {
           categorie: input.categorie,
           actif: true,
-          lieu: {
-            verified: true,
-          },
         },
         include: {
           lieu: {
@@ -265,9 +257,6 @@ export const serviceRouter = router({
       },
       where: {
         actif: true,
-        lieu: {
-          verified: true,
-        },
       },
       orderBy: {
         _count: {

@@ -145,9 +145,7 @@ interface Lieu {
 function CarteContent() {
   const router = useRouter();
   const [selectedLieu, setSelectedLieu] = useState<Lieu | null>(null);
-  const [selectedTypes, setSelectedTypes] = useState<LieuType[]>([
-    "MAISON_COMMUNALE",
-  ]);
+  const [selectedTypes, setSelectedTypes] = useState<LieuType[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showBoundaries, setShowBoundaries] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");

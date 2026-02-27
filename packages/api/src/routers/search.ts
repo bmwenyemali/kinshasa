@@ -56,7 +56,6 @@ export const searchRouter = router({
           ctx.prisma.servicePropose.findMany({
             where: {
               actif: true,
-              lieu: { verified: true },
               OR: [
                 { nomService: { contains: input.query, mode: "insensitive" } },
                 { description: { contains: input.query, mode: "insensitive" } },

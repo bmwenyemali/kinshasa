@@ -34,10 +34,10 @@ const communeColors = [
 ];
 
 const districtColors: Record<string, string> = {
-  Lukunga: "from-blue-600 to-indigo-700",
-  Funa: "from-amber-500 to-orange-600",
-  "Mont-Amba": "from-emerald-500 to-green-700",
-  Tshangu: "from-violet-500 to-purple-700",
+  Lukunga: "bg-white border-2 border-primary",
+  Funa: "bg-white border-2 border-primary",
+  "Mont-Amba": "bg-white border-2 border-primary",
+  Tshangu: "bg-white border-2 border-primary",
 };
 
 const districtDescriptions: Record<string, string> = {
@@ -234,18 +234,18 @@ export default function CommunesPage() {
                       className="w-full text-left"
                     >
                       <div
-                        className={`bg-gradient-to-r ${districtColors[district.name] ?? "from-gray-600 to-gray-800"} rounded-2xl p-5 text-white shadow-lg hover:shadow-xl transition-shadow`}
+                        className={`${districtColors[district.name] ?? "bg-white border-2 border-primary"} rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
-                              <Layers className="w-5 h-5" />
+                            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                              <Layers className="w-5 h-5 text-primary" />
                             </div>
                             <div>
-                              <h2 className="text-xl font-bold">
+                              <h2 className="text-xl font-bold text-foreground">
                                 District de {district.name}
                               </h2>
-                              <p className="text-white/60 text-sm mt-0.5">
+                              <p className="text-muted-foreground text-sm mt-0.5">
                                 {district.allCommunes.length} commune
                                 {district.allCommunes.length > 1 ? "s" : ""}
                                 {" · "}
@@ -261,13 +261,13 @@ export default function CommunesPage() {
                             </div>
                           </div>
                           {expandedDistricts.has(district.name) ? (
-                            <ChevronUp className="w-5 h-5 text-white/60" />
+                            <ChevronUp className="w-5 h-5 text-muted-foreground" />
                           ) : (
-                            <ChevronDown className="w-5 h-5 text-white/60" />
+                            <ChevronDown className="w-5 h-5 text-muted-foreground" />
                           )}
                         </div>
                         {expandedDistricts.has(district.name) && (
-                          <p className="text-white/50 text-sm mt-3 leading-relaxed max-w-3xl">
+                          <p className="text-muted-foreground text-sm mt-3 leading-relaxed max-w-3xl">
                             {districtDescriptions[district.name]}
                           </p>
                         )}

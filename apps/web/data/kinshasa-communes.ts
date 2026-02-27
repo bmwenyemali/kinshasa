@@ -801,7 +801,6 @@ export const DISTRICTS: { name: string; communes: string[] }[] = [
       "Barumbu",
       "Gombe",
       "Kinshasa",
-      "Kinshasa (Commune)",
       "Kintambo",
       "Lingwala",
       "Ngaliema",

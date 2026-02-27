@@ -35,7 +35,6 @@ function RechercheContent() {
     types: selectedTypes.length > 0 ? selectedTypes : undefined,
     categories: selectedCategories.length > 0 ? selectedCategories : undefined,
     communeIds: initialCommune ? [initialCommune] : undefined,
-    verified: true,
     limit: 30,
   });
 
