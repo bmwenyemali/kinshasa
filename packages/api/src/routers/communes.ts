@@ -13,6 +13,7 @@ export const communeRouter = router({
   getAllWithStats: publicProcedure.query(async ({ ctx }) => {
     const communes = await ctx.prisma.commune.findMany({
       include: {
+        district: { select: { id: true, name: true } },
         _count: {
           select: { lieux: true, quartiers: true },
         },

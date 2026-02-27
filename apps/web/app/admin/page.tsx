@@ -1504,8 +1504,22 @@ export default function AdminPage() {
 
 // ======================== ADMIN SUB-TABS ========================
 
+const CATEGORIES = [
+  "ETAT_CIVIL",
+  "SANTE",
+  "JUSTICE",
+  "EDUCATION",
+  "IMPOTS",
+  "URGENCE",
+  "SOCIAL",
+  "TRANSPORT",
+  "SECURITE",
+  "AUTRE",
+];
+
 function AdminDocumentsTab() {
   const [search, setSearch] = useState("");
+  const [editDoc, setEditDoc] = useState<any>(null);
   const { data, isLoading } = trpc.admin.getDocuments.useQuery({
     search: search || undefined,
   });
@@ -1513,8 +1527,11 @@ function AdminDocumentsTab() {
   const deleteMut = trpc.admin.deleteDocument.useMutation({
     onSuccess: () => utils.admin.getDocuments.invalidate(),
   });
-  const toggleMut = trpc.admin.updateDocument.useMutation({
-    onSuccess: () => utils.admin.getDocuments.invalidate(),
+  const updateMut = trpc.admin.updateDocument.useMutation({
+    onSuccess: () => {
+      utils.admin.getDocuments.invalidate();
+      setEditDoc(null);
+    },
   });
 
   return (
@@ -1541,79 +1558,99 @@ function AdminDocumentsTab() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-gray-50">
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Nom
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Catégorie
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Prix
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Délai
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Actif
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.items.map((doc) => (
-                <tr
-                  key={doc.id}
-                  className="border-b border-border hover:bg-gray-50"
-                >
-                  <td className="py-3 px-4">
-                    <p className="font-medium text-foreground">{doc.nom}</p>
-                    <p className="text-xs text-muted-foreground">{doc.slug}</p>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                      {doc.categorie}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-xs">
-                    {doc.prixEstimatif ? String(doc.prixEstimatif) : "—"}
-                  </td>
-                  <td className="py-3 px-4 text-xs">
-                    {doc.delaiEstimatif ? String(doc.delaiEstimatif) : "—"}
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() =>
-                        toggleMut.mutate({ id: doc.id, actif: !doc.actif })
-                      }
-                      className="text-muted-foreground hover:text-primary"
-                    >
-                      {doc.actif ? (
-                        <ToggleRight className="w-5 h-5 text-emerald-500" />
-                      ) : (
-                        <ToggleLeft className="w-5 h-5" />
-                      )}
-                    </button>
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => {
-                        if (confirm("Supprimer ce document ?"))
-                          deleteMut.mutate({ id: doc.id });
-                      }}
-                      className="p-1.5 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-gray-50">
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Nom
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Catégorie
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Prix
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Délai
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Commentaire
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Actif
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data?.items.map((doc: any) => (
+                  <tr
+                    key={doc.id}
+                    className="border-b border-border hover:bg-gray-50"
+                  >
+                    <td className="py-3 px-4">
+                      <p className="font-medium text-foreground">{doc.nom}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {doc.slug}
+                      </p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                        {doc.categorie}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-xs">
+                      {doc.prixEstimatif ? String(doc.prixEstimatif) : "—"}
+                    </td>
+                    <td className="py-3 px-4 text-xs">
+                      {doc.delaiEstimatif || "—"}
+                    </td>
+                    <td className="py-3 px-4 text-xs max-w-[200px]">
+                      <p className="truncate text-muted-foreground">
+                        {doc.commentaire || "—"}
+                      </p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() =>
+                          updateMut.mutate({ id: doc.id, actif: !doc.actif })
+                        }
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        {doc.actif ? (
+                          <ToggleRight className="w-5 h-5 text-emerald-500" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5" />
+                        )}
+                      </button>
+                    </td>
+                    <td className="py-3 px-4 flex items-center gap-1">
+                      <button
+                        onClick={() => setEditDoc(doc)}
+                        className="p-1.5 hover:bg-blue-50 rounded-lg"
+                        title="Modifier"
+                      >
+                        <Edit3 className="w-4 h-4 text-blue-500" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm("Supprimer ce document ?"))
+                            deleteMut.mutate({ id: doc.id });
+                        }}
+                        className="p-1.5 hover:bg-red-50 rounded-lg"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {(!data?.items || data.items.length === 0) && (
             <p className="text-sm text-muted-foreground text-center py-8">
               Aucun document trouvé
@@ -1621,18 +1658,265 @@ function AdminDocumentsTab() {
           )}
         </div>
       )}
+
+      {/* Edit Document Modal */}
+      {editDoc && (
+        <EditDocumentModal
+          doc={editDoc}
+          onClose={() => setEditDoc(null)}
+          onSave={(vals) => updateMut.mutate({ id: editDoc.id, ...vals })}
+          saving={updateMut.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditDocumentModal({
+  doc,
+  onClose,
+  onSave,
+  saving,
+}: {
+  doc: any;
+  onClose: () => void;
+  onSave: (vals: any) => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState({
+    nom: doc.nom || "",
+    categorie: doc.categorie || "ETAT_CIVIL",
+    description: doc.description || "",
+    definition: doc.definition || "",
+    role: doc.role || "",
+    prixEstimatif: doc.prixEstimatif ? String(doc.prixEstimatif) : "",
+    devise: doc.devise || "FC",
+    delaiEstimatif: doc.delaiEstimatif || "",
+    procedure: doc.procedure || "",
+    ouObtenir: doc.ouObtenir || "",
+    conseils: doc.conseils || "",
+    baseJuridique: doc.baseJuridique || "",
+    commentaire: doc.commentaire || "",
+  });
+
+  const upd = (key: string, val: string) =>
+    setForm((p: any) => ({ ...p, [key]: val }));
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white rounded-t-2xl z-10">
+          <h3 className="text-lg font-bold text-foreground">
+            Modifier le document
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Nom
+              </label>
+              <input
+                value={form.nom}
+                onChange={(e) => upd("nom", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Catégorie
+              </label>
+              <select
+                value={form.categorie}
+                onChange={(e) => upd("categorie", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Prix estimatif
+              </label>
+              <input
+                value={form.prixEstimatif}
+                onChange={(e) => upd("prixEstimatif", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Devise
+              </label>
+              <input
+                value={form.devise}
+                onChange={(e) => upd("devise", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Délai estimatif
+              </label>
+              <input
+                value={form.delaiEstimatif}
+                onChange={(e) => upd("delaiEstimatif", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Description
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => upd("description", e.target.value)}
+              rows={2}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Définition
+            </label>
+            <textarea
+              value={form.definition}
+              onChange={(e) => upd("definition", e.target.value)}
+              rows={3}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Rôle
+            </label>
+            <textarea
+              value={form.role}
+              onChange={(e) => upd("role", e.target.value)}
+              rows={2}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Procédure
+            </label>
+            <textarea
+              value={form.procedure}
+              onChange={(e) => upd("procedure", e.target.value)}
+              rows={4}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm font-mono"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Où obtenir
+            </label>
+            <textarea
+              value={form.ouObtenir}
+              onChange={(e) => upd("ouObtenir", e.target.value)}
+              rows={2}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Conseils
+            </label>
+            <textarea
+              value={form.conseils}
+              onChange={(e) => upd("conseils", e.target.value)}
+              rows={2}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Base juridique
+            </label>
+            <textarea
+              value={form.baseJuridique}
+              onChange={(e) => upd("baseJuridique", e.target.value)}
+              rows={2}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <label className="text-xs font-bold text-amber-700">
+              💬 Commentaire admin
+            </label>
+            <textarea
+              value={form.commentaire}
+              onChange={(e) => upd("commentaire", e.target.value)}
+              rows={3}
+              placeholder="Ajoutez un commentaire interne (visible uniquement dans l'admin)..."
+              className="w-full mt-2 px-3 py-2 rounded-lg border border-amber-200 text-sm bg-white"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 justify-end p-6 border-t border-border sticky bottom-0 bg-white rounded-b-2xl">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-gray-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() =>
+              onSave({
+                nom: form.nom,
+                categorie: form.categorie,
+                description: form.description || undefined,
+                definition: form.definition || undefined,
+                role: form.role || undefined,
+                prixEstimatif: form.prixEstimatif || undefined,
+                devise: form.devise || undefined,
+                delaiEstimatif: form.delaiEstimatif || undefined,
+                procedure: form.procedure || undefined,
+                ouObtenir: form.ouObtenir || undefined,
+                conseils: form.conseils || undefined,
+                baseJuridique: form.baseJuridique || undefined,
+                commentaire: form.commentaire || null,
+              })
+            }
+            disabled={saving}
+            className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? "Enregistrement..." : "Enregistrer"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
 function AdminServicesTab() {
   const [search, setSearch] = useState("");
+  const [editSvc, setEditSvc] = useState<any>(null);
   const { data, isLoading } = trpc.admin.getServices.useQuery({
     search: search || undefined,
   });
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteService.useMutation({
     onSuccess: () => utils.admin.getServices.invalidate(),
+  });
+  const updateMut = trpc.admin.updateService.useMutation({
+    onSuccess: () => {
+      utils.admin.getServices.invalidate();
+      setEditSvc(null);
+    },
   });
 
   return (
@@ -1659,63 +1943,98 @@ function AdminServicesTab() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-border overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-gray-50">
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Nom du service
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Lieu
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Catégorie
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Prix
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.items.map((svc) => (
-                <tr
-                  key={svc.id}
-                  className="border-b border-border hover:bg-gray-50"
-                >
-                  <td className="py-3 px-4 font-medium text-foreground">
-                    {svc.nomService}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-muted-foreground">
-                    {svc.lieu?.nom || "—"}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                      {svc.categorie}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-xs">
-                    {svc.prixOfficiel
-                      ? `${Number(svc.prixOfficiel).toLocaleString()} ${svc.devise}`
-                      : "—"}
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => {
-                        if (confirm("Supprimer ce service ?"))
-                          deleteMut.mutate({ id: svc.id });
-                      }}
-                      className="p-1.5 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-gray-50">
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Nom du service
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Lieu
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Catégorie
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Prix
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Commentaire
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Actif
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data?.items.map((svc: any) => (
+                  <tr
+                    key={svc.id}
+                    className="border-b border-border hover:bg-gray-50"
+                  >
+                    <td className="py-3 px-4 font-medium text-foreground max-w-[250px]">
+                      <p className="truncate">{svc.nomService}</p>
+                    </td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">
+                      {svc.lieu?.nom || "—"}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                        {svc.categorie}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-xs">
+                      {svc.prixOfficiel
+                        ? `${Number(svc.prixOfficiel).toLocaleString()} ${svc.devise}`
+                        : "—"}
+                    </td>
+                    <td className="py-3 px-4 text-xs max-w-[200px]">
+                      <p className="truncate text-muted-foreground">
+                        {svc.commentaire || "—"}
+                      </p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() =>
+                          updateMut.mutate({ id: svc.id, actif: !svc.actif })
+                        }
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        {svc.actif ? (
+                          <ToggleRight className="w-5 h-5 text-emerald-500" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5" />
+                        )}
+                      </button>
+                    </td>
+                    <td className="py-3 px-4 flex items-center gap-1">
+                      <button
+                        onClick={() => setEditSvc(svc)}
+                        className="p-1.5 hover:bg-blue-50 rounded-lg"
+                        title="Modifier"
+                      >
+                        <Edit3 className="w-4 h-4 text-blue-500" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm("Supprimer ce service ?"))
+                            deleteMut.mutate({ id: svc.id });
+                        }}
+                        className="p-1.5 hover:bg-red-50 rounded-lg"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {(!data?.items || data.items.length === 0) && (
             <p className="text-sm text-muted-foreground text-center py-8">
               Aucun service trouvé
@@ -1723,6 +2042,212 @@ function AdminServicesTab() {
           )}
         </div>
       )}
+
+      {/* Edit Service Modal */}
+      {editSvc && (
+        <EditServiceModal
+          svc={editSvc}
+          onClose={() => setEditSvc(null)}
+          onSave={(vals) => updateMut.mutate({ id: editSvc.id, ...vals })}
+          saving={updateMut.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditServiceModal({
+  svc,
+  onClose,
+  onSave,
+  saving,
+}: {
+  svc: any;
+  onClose: () => void;
+  onSave: (vals: any) => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState({
+    nomService: svc.nomService || "",
+    categorie: svc.categorie || "ETAT_CIVIL",
+    description: svc.description || "",
+    prixOfficiel: svc.prixOfficiel ? Number(svc.prixOfficiel) : 0,
+    devise: svc.devise || "FC",
+    delai: svc.delai || "",
+    documentsRequis: (svc.documentsRequis || []).join("\n"),
+    procedure: svc.procedure || "",
+    conditionsParticulieres: svc.conditionsParticulieres || "",
+    commentaire: svc.commentaire || "",
+  });
+
+  const upd = (key: string, val: any) =>
+    setForm((p: any) => ({ ...p, [key]: val }));
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-white rounded-t-2xl z-10">
+          <h3 className="text-lg font-bold text-foreground">
+            Modifier le service
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Nom du service
+              </label>
+              <input
+                value={form.nomService}
+                onChange={(e) => upd("nomService", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Catégorie
+              </label>
+              <select
+                value={form.categorie}
+                onChange={(e) => upd("categorie", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Délai
+              </label>
+              <input
+                value={form.delai}
+                onChange={(e) => upd("delai", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Prix officiel
+              </label>
+              <input
+                type="number"
+                value={form.prixOfficiel}
+                onChange={(e) => upd("prixOfficiel", Number(e.target.value))}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Devise
+              </label>
+              <input
+                value={form.devise}
+                onChange={(e) => upd("devise", e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Description
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => upd("description", e.target.value)}
+              rows={3}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Documents requis (un par ligne)
+            </label>
+            <textarea
+              value={form.documentsRequis}
+              onChange={(e) => upd("documentsRequis", e.target.value)}
+              rows={4}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm font-mono"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Procédure
+            </label>
+            <textarea
+              value={form.procedure}
+              onChange={(e) => upd("procedure", e.target.value)}
+              rows={6}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm font-mono"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Conditions particulières
+            </label>
+            <textarea
+              value={form.conditionsParticulieres}
+              onChange={(e) => upd("conditionsParticulieres", e.target.value)}
+              rows={4}
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+            />
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <label className="text-xs font-bold text-amber-700">
+              💬 Commentaire admin
+            </label>
+            <textarea
+              value={form.commentaire}
+              onChange={(e) => upd("commentaire", e.target.value)}
+              rows={3}
+              placeholder="Ajoutez un commentaire interne (visible uniquement dans l'admin)..."
+              className="w-full mt-2 px-3 py-2 rounded-lg border border-amber-200 text-sm bg-white"
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 justify-end p-6 border-t border-border sticky bottom-0 bg-white rounded-b-2xl">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-gray-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() =>
+              onSave({
+                nomService: form.nomService,
+                categorie: form.categorie,
+                description: form.description || undefined,
+                prixOfficiel: form.prixOfficiel || undefined,
+                devise: form.devise || undefined,
+                delai: form.delai || undefined,
+                documentsRequis: form.documentsRequis
+                  .split("\n")
+                  .map((s: string) => s.trim())
+                  .filter(Boolean),
+                procedure: form.procedure || undefined,
+                conditionsParticulieres:
+                  form.conditionsParticulieres || undefined,
+                commentaire: form.commentaire || null,
+              })
+            }
+            disabled={saving}
+            className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? "Enregistrement..." : "Enregistrer"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

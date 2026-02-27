@@ -398,7 +398,10 @@ export default function LieuDetailPage() {
                                             Procédure
                                           </h4>
                                           <p className="text-sm text-muted-foreground whitespace-pre-line">
-                                            {service.procedure}
+                                            {service.procedure.replace(
+                                              /\\n/g,
+                                              "\n",
+                                            )}
                                           </p>
                                         </div>
                                       )}
@@ -407,7 +410,10 @@ export default function LieuDetailPage() {
                                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                                           <p className="text-sm text-yellow-800">
                                             <strong>Note:</strong>{" "}
-                                            {service.conditionsParticulieres}
+                                            {service.conditionsParticulieres.replace(
+                                              /\\n/g,
+                                              "\n",
+                                            )}
                                           </p>
                                         </div>
                                       )}

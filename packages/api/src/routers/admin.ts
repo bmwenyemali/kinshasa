@@ -460,6 +460,7 @@ export const adminRouter = router({
         conseils: z.string().optional(),
         baseJuridique: z.string().optional(),
         aliases: z.array(z.string()).optional(),
+        commentaire: z.string().nullable().optional(),
         actif: z.boolean().optional(),
       }),
     )
@@ -642,6 +643,8 @@ export const adminRouter = router({
         delai: z.string().optional(),
         documentsRequis: z.array(z.string()).optional(),
         procedure: z.string().optional(),
+        conditionsParticulieres: z.string().optional(),
+        commentaire: z.string().nullable().optional(),
         actif: z.boolean().optional(),
       }),
     )

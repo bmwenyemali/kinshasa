@@ -223,6 +223,7 @@ model ServicePropose {
   delai                  String?          @db.VarChar(100)
   procedure              String?          @db.Text
   conditionsParticulieres String?          @map("conditions_particulieres") @db.Text
+  commentaire            String?          @db.Text
   actif                  Boolean          @default(true)
   createdAt              DateTime         @default(now()) @map("created_at")
   updatedAt              DateTime         @updatedAt @map("updated_at")
@@ -414,6 +415,7 @@ model Document {
   conseils         String?          @db.Text    // Practical tips
   baseJuridique    String?          @map("base_juridique") @db.Text
   aliases          String[]         // alternative search names ("passe port", "deces", etc.)
+  commentaire      String?          @db.Text
   actif            Boolean          @default(true)
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")

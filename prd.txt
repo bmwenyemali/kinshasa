@@ -233,7 +233,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 
 ```javascript
 // Configuration MapBox
-const mapboxToken = "pk.YOUR_MAPBOX_TOKEN_HERE";
+const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN; // Stored in .env.local
 
 // Styles recommandés
 - Rues: 'mapbox://styles/mapbox/streets-v12'

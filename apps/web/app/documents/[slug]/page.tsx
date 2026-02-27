@@ -213,7 +213,7 @@ export default function DocumentDetailPage() {
                         Procédure d&apos;obtention
                       </h2>
                       <div className="text-muted-foreground leading-relaxed whitespace-pre-line bg-gray-50 rounded-xl p-4">
-                        {doc.procedure}
+                        {doc.procedure.replace(/\\n/g, "\n")}
                       </div>
                     </div>
                   )}

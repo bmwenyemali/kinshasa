@@ -358,7 +358,7 @@ function ServiceCard({ service }: { service: any }) {
               </h4>
               <div className="bg-white rounded-xl border border-border p-4">
                 <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                  {service.procedure}
+                  {service.procedure.replace(/\\n/g, "\n")}
                 </div>
               </div>
             </div>
@@ -371,8 +371,8 @@ function ServiceCard({ service }: { service: any }) {
                 <AlertTriangle className="w-4 h-4 text-amber-500" />
                 Conditions particulières
               </h4>
-              <p className="text-sm text-muted-foreground bg-amber-50 rounded-xl border border-amber-100 p-4">
-                {service.conditionsParticulieres}
+              <p className="text-sm text-muted-foreground bg-amber-50 rounded-xl border border-amber-100 p-4 whitespace-pre-line">
+                {service.conditionsParticulieres.replace(/\\n/g, "\n")}
               </p>
             </div>
           )}

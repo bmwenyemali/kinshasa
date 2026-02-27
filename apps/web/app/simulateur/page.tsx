@@ -132,6 +132,7 @@ function SimulateurContent() {
   const procedureSteps = useMemo(() => {
     if (!selectedService?.procedure) return [];
     const lines = selectedService.procedure
+      .replace(/\\n/g, "\n")
       .split("\n")
       .filter((l: string) => l.trim());
     return lines.map((line: string, i: number) => ({

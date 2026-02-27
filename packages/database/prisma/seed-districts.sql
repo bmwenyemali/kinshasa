@@ -12,7 +12,7 @@ ON CONFLICT (name) DO NOTHING;
 
 -- Assign communes to District Lukunga
 UPDATE communes SET district_id = (SELECT id FROM districts WHERE name = 'Lukunga')
-WHERE name IN ('Barumbu', 'Gombe', 'Kinshasa', 'Kintambo', 'Lingwala', 'Ngaliema');
+WHERE name IN ('Barumbu', 'Gombe', 'Kinshasa', 'Kinshasa (Commune)', 'Kintambo', 'Lingwala', 'Ngaliema');
 
 -- Assign communes to District Funa
 UPDATE communes SET district_id = (SELECT id FROM districts WHERE name = 'Funa')
