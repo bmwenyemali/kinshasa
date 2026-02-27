@@ -110,9 +110,11 @@ export default function AdminPage() {
   const utils = trpc.useUtils();
   const updateRoleMutation = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => utils.admin.getUsers.invalidate(),
+    onError: (e) => alert("Erreur: " + e.message),
   });
   const toggleActiveMutation = trpc.admin.toggleUserActive.useMutation({
     onSuccess: () => utils.admin.getUsers.invalidate(),
+    onError: (e) => alert("Erreur: " + e.message),
   });
 
   // Ville data
@@ -126,12 +128,14 @@ export default function AdminPage() {
       utils.ville.getGouvernorat.invalidate();
       setEditingGouv(false);
     },
+    onError: (e) => alert("Erreur: " + e.message),
   });
   const updateMinistreMutation = trpc.admin.updateMinistre.useMutation({
     onSuccess: () => {
       utils.ville.getGouvernorat.invalidate();
       setEditingMinistreId(null);
     },
+    onError: (e) => alert("Erreur: " + e.message),
   });
   const createMinistreMutation = trpc.admin.createMinistre.useMutation({
     onSuccess: () => {
@@ -146,15 +150,18 @@ export default function AdminPage() {
         ordre: 0,
       });
     },
+    onError: (e) => alert("Erreur: " + e.message),
   });
   const deleteMinistreMutation = trpc.admin.deleteMinistre.useMutation({
     onSuccess: () => utils.ville.getGouvernorat.invalidate(),
+    onError: (e) => alert("Erreur: " + e.message),
   });
   const updateDeputeMutation = trpc.admin.updateDepute.useMutation({
     onSuccess: () => {
       utils.ville.getDeputes.invalidate();
       setEditingDeputeId(null);
     },
+    onError: (e) => alert("Erreur: " + e.message),
   });
   const createDeputeMutation = trpc.admin.createDepute.useMutation({
     onSuccess: () => {
@@ -169,9 +176,11 @@ export default function AdminPage() {
         email: "",
       });
     },
+    onError: (e) => alert("Erreur: " + e.message),
   });
   const deleteDeputeMutation = trpc.admin.deleteDepute.useMutation({
     onSuccess: () => utils.ville.getDeputes.invalidate(),
+    onError: (e) => alert("Erreur: " + e.message),
   });
 
   const tabs = [
@@ -1486,18 +1495,21 @@ function AdminDocumentsTab() {
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteDocument.useMutation({
     onSuccess: () => utils.admin.getDocuments.invalidate(),
+    onError: (e) => alert("Erreur suppression: " + e.message),
   });
   const updateMut = trpc.admin.updateDocument.useMutation({
     onSuccess: () => {
       utils.admin.getDocuments.invalidate();
       setEditDoc(null);
     },
+    onError: (e) => alert("Erreur mise à jour: " + e.message),
   });
   const createMut = trpc.admin.createDocument.useMutation({
     onSuccess: () => {
       utils.admin.getDocuments.invalidate();
       setShowCreate(false);
     },
+    onError: (e) => alert("Erreur création: " + e.message),
   });
 
   return (
@@ -1662,6 +1674,10 @@ function AdminDocumentsTab() {
           }}
           onClose={() => setShowCreate(false)}
           onSave={(vals) => {
+            if (!vals.nom) {
+              alert("Le nom du document est requis");
+              return;
+            }
             const slug = (vals.nom || "document")
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, "-")
@@ -1927,16 +1943,18 @@ function AdminServicesTab() {
   const { data, isLoading } = trpc.admin.getServices.useQuery({
     search: search || undefined,
   });
-  const { data: lieuxData } = trpc.admin.getServices.useQuery({});
+  const { data: lieuxData } = trpc.admin.getLieux.useQuery({});
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteService.useMutation({
     onSuccess: () => utils.admin.getServices.invalidate(),
+    onError: (e) => alert("Erreur suppression: " + e.message),
   });
   const updateMut = trpc.admin.updateService.useMutation({
     onSuccess: () => {
       utils.admin.getServices.invalidate();
       setEditSvc(null);
     },
+    onError: (e) => alert("Erreur mise à jour: " + e.message),
   });
   const createMut = trpc.admin.createService.useMutation({
     onSuccess: () => {
@@ -1955,6 +1973,7 @@ function AdminServicesTab() {
         conditionsParticulieres: "",
       });
     },
+    onError: (e) => alert("Erreur création: " + e.message),
   });
 
   return (
@@ -2010,16 +2029,22 @@ function AdminServicesTab() {
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">
-                ID du lieu (UUID) *
+                Lieu *
               </label>
-              <input
+              <select
                 value={newSvc.lieuId}
                 onChange={(e) =>
                   setNewSvc((p) => ({ ...p, lieuId: e.target.value }))
                 }
                 className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
-                placeholder="UUID du lieu"
-              />
+              >
+                <option value="">-- Sélectionner un lieu --</option>
+                {lieuxData?.items?.map((l: any) => (
+                  <option key={l.id} value={l.id}>
+                    {l.nom} ({l.type})
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">
@@ -2113,7 +2138,7 @@ function AdminServicesTab() {
             <button
               onClick={() => {
                 if (!newSvc.nomService || !newSvc.lieuId) {
-                  alert("Nom et ID lieu sont requis");
+                  alert("Nom du service et lieu sont requis");
                   return;
                 }
                 createMut.mutate({
@@ -2121,7 +2146,8 @@ function AdminServicesTab() {
                   nomService: newSvc.nomService,
                   categorie: newSvc.categorie,
                   description: newSvc.description || undefined,
-                  prixOfficiel: newSvc.prixOfficiel || undefined,
+                  prixOfficiel:
+                    newSvc.prixOfficiel > 0 ? newSvc.prixOfficiel : undefined,
                   devise: newSvc.devise,
                   delai: newSvc.delai || undefined,
                   documentsRequis: newSvc.documentsRequis
@@ -2129,6 +2155,8 @@ function AdminServicesTab() {
                     .map((s) => s.trim())
                     .filter(Boolean),
                   procedure: newSvc.procedure || undefined,
+                  conditionsParticulieres:
+                    newSvc.conditionsParticulieres || undefined,
                 });
               }}
               disabled={createMut.isPending}
@@ -2470,22 +2498,42 @@ function AdminLieuxTab() {
   const { data: communes } = trpc.admin.getCommunes.useQuery({});
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteLieu.useMutation({
-    onSuccess: () => { utils.admin.getLieux.invalidate(); utils.admin.getStats.invalidate(); },
+    onSuccess: () => {
+      utils.admin.getLieux.invalidate();
+      utils.admin.getStats.invalidate();
+    },
+    onError: (e) => alert("Erreur suppression: " + e.message),
   });
   const updateMut = trpc.admin.updateLieu.useMutation({
     onSuccess: () => utils.admin.getLieux.invalidate(),
+    onError: (e) => alert("Erreur mise à jour: " + e.message),
   });
   const createMut = trpc.admin.createLieu.useMutation({
     onSuccess: () => {
       utils.admin.getLieux.invalidate();
       utils.admin.getStats.invalidate();
       setShowCreate(false);
-      setNewLieu({ nom: "", type: "ADMINISTRATION", communeId: "", adresse: "", telephone: "", responsable: "" });
+      setNewLieu({
+        nom: "",
+        type: "ADMINISTRATION",
+        communeId: "",
+        adresse: "",
+        telephone: "",
+        responsable: "",
+      });
     },
+    onError: (e) => alert("Erreur création: " + e.message),
   });
 
   const [showCreate, setShowCreate] = useState(false);
-  const [newLieu, setNewLieu] = useState({ nom: "", type: "ADMINISTRATION", communeId: "", adresse: "", telephone: "", responsable: "" });
+  const [newLieu, setNewLieu] = useState({
+    nom: "",
+    type: "ADMINISTRATION",
+    communeId: "",
+    adresse: "",
+    telephone: "",
+    responsable: "",
+  });
   const [editLieu, setEditLieu] = useState<any>(null);
 
   const lieuTypes = Object.entries(LIEU_TYPE_LABELS);
@@ -2497,7 +2545,10 @@ function AdminLieuxTab() {
           <MapPin className="w-5 h-5 text-primary" />
           Lieux ({data?.total || 0})
         </h3>
-        <button onClick={() => setShowCreate(!showCreate)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90">
+        <button
+          onClick={() => setShowCreate(!showCreate)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90"
+        >
           <Plus className="w-4 h-4" /> Nouveau lieu
         </button>
       </div>
@@ -2508,39 +2559,116 @@ function AdminLieuxTab() {
           <h4 className="font-bold text-sm text-emerald-800">Nouveau lieu</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Nom *</label>
-              <input value={newLieu.nom} onChange={e => setNewLieu(p => ({ ...p, nom: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm" />
+              <label className="text-xs font-medium text-muted-foreground">
+                Nom *
+              </label>
+              <input
+                value={newLieu.nom}
+                onChange={(e) =>
+                  setNewLieu((p) => ({ ...p, nom: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Type *</label>
-              <select value={newLieu.type} onChange={e => setNewLieu(p => ({ ...p, type: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm">
-                {lieuTypes.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+              <label className="text-xs font-medium text-muted-foreground">
+                Type *
+              </label>
+              <select
+                value={newLieu.type}
+                onChange={(e) =>
+                  setNewLieu((p) => ({ ...p, type: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
+                {lieuTypes.map(([val, label]) => (
+                  <option key={val} value={val}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Commune</label>
-              <select value={newLieu.communeId} onChange={e => setNewLieu(p => ({ ...p, communeId: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm">
+              <label className="text-xs font-medium text-muted-foreground">
+                Commune
+              </label>
+              <select
+                value={newLieu.communeId}
+                onChange={(e) =>
+                  setNewLieu((p) => ({ ...p, communeId: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
                 <option value="">— Aucune —</option>
-                {communes?.items?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {communes?.items?.map((c: any) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Adresse</label>
-              <input value={newLieu.adresse} onChange={e => setNewLieu(p => ({ ...p, adresse: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm" />
+              <label className="text-xs font-medium text-muted-foreground">
+                Adresse
+              </label>
+              <input
+                value={newLieu.adresse}
+                onChange={(e) =>
+                  setNewLieu((p) => ({ ...p, adresse: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Téléphone</label>
-              <input value={newLieu.telephone} onChange={e => setNewLieu(p => ({ ...p, telephone: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm" />
+              <label className="text-xs font-medium text-muted-foreground">
+                Téléphone
+              </label>
+              <input
+                value={newLieu.telephone}
+                onChange={(e) =>
+                  setNewLieu((p) => ({ ...p, telephone: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Responsable</label>
-              <input value={newLieu.responsable} onChange={e => setNewLieu(p => ({ ...p, responsable: e.target.value }))} className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm" />
+              <label className="text-xs font-medium text-muted-foreground">
+                Responsable
+              </label>
+              <input
+                value={newLieu.responsable}
+                onChange={(e) =>
+                  setNewLieu((p) => ({ ...p, responsable: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
             </div>
           </div>
           <div className="flex gap-2 pt-2">
-            <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-gray-50">Annuler</button>
-            <button onClick={() => { if (!newLieu.nom) return; createMut.mutate({ nom: newLieu.nom, type: newLieu.type, communeId: newLieu.communeId || undefined, adresse: newLieu.adresse || undefined, telephone: newLieu.telephone || undefined, responsable: newLieu.responsable || undefined, verified: true }); }} disabled={createMut.isPending} className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
-              <Save className="w-4 h-4" /> {createMut.isPending ? "Création..." : "Créer"}
+            <button
+              onClick={() => setShowCreate(false)}
+              className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => {
+                if (!newLieu.nom) return;
+                createMut.mutate({
+                  nom: newLieu.nom,
+                  type: newLieu.type,
+                  communeId: newLieu.communeId || undefined,
+                  adresse: newLieu.adresse || undefined,
+                  telephone: newLieu.telephone || undefined,
+                  responsable: newLieu.responsable || undefined,
+                  verified: true,
+                });
+              }}
+              disabled={createMut.isPending}
+              className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />{" "}
+              {createMut.isPending ? "Création..." : "Créer"}
             </button>
           </div>
         </div>
@@ -2555,45 +2683,156 @@ function AdminLieuxTab() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-gray-50">
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Nom</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Commune</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Adresse</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Responsable</th>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Nom
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Type
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Commune
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Adresse
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Responsable
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {data?.items.map((l: any) => (
-                <tr key={l.id} className="border-b border-border hover:bg-gray-50">
+                <tr
+                  key={l.id}
+                  className="border-b border-border hover:bg-gray-50"
+                >
                   {editLieu?.id === l.id ? (
                     <>
-                      <td className="py-2 px-4"><input value={editLieu.nom} onChange={e => setEditLieu((p: any) => ({ ...p, nom: e.target.value }))} className="w-full px-2 py-1 rounded border border-border text-sm" /></td>
                       <td className="py-2 px-4">
-                        <select value={editLieu.type} onChange={e => setEditLieu((p: any) => ({ ...p, type: e.target.value }))} className="w-full px-2 py-1 rounded border border-border text-sm">
-                          {lieuTypes.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+                        <input
+                          value={editLieu.nom}
+                          onChange={(e) =>
+                            setEditLieu((p: any) => ({
+                              ...p,
+                              nom: e.target.value,
+                            }))
+                          }
+                          className="w-full px-2 py-1 rounded border border-border text-sm"
+                        />
+                      </td>
+                      <td className="py-2 px-4">
+                        <select
+                          value={editLieu.type}
+                          onChange={(e) =>
+                            setEditLieu((p: any) => ({
+                              ...p,
+                              type: e.target.value,
+                            }))
+                          }
+                          className="w-full px-2 py-1 rounded border border-border text-sm"
+                        >
+                          {lieuTypes.map(([val, label]) => (
+                            <option key={val} value={val}>
+                              {label}
+                            </option>
+                          ))}
                         </select>
                       </td>
-                      <td className="py-2 px-4 text-xs">{l.commune?.name || "—"}</td>
-                      <td className="py-2 px-4"><input value={editLieu.adresse || ""} onChange={e => setEditLieu((p: any) => ({ ...p, adresse: e.target.value }))} className="w-full px-2 py-1 rounded border border-border text-sm" /></td>
-                      <td className="py-2 px-4"><input value={editLieu.responsable || ""} onChange={e => setEditLieu((p: any) => ({ ...p, responsable: e.target.value }))} className="w-full px-2 py-1 rounded border border-border text-sm" /></td>
+                      <td className="py-2 px-4 text-xs">
+                        {l.commune?.name || "—"}
+                      </td>
+                      <td className="py-2 px-4">
+                        <input
+                          value={editLieu.adresse || ""}
+                          onChange={(e) =>
+                            setEditLieu((p: any) => ({
+                              ...p,
+                              adresse: e.target.value,
+                            }))
+                          }
+                          className="w-full px-2 py-1 rounded border border-border text-sm"
+                        />
+                      </td>
+                      <td className="py-2 px-4">
+                        <input
+                          value={editLieu.responsable || ""}
+                          onChange={(e) =>
+                            setEditLieu((p: any) => ({
+                              ...p,
+                              responsable: e.target.value,
+                            }))
+                          }
+                          className="w-full px-2 py-1 rounded border border-border text-sm"
+                        />
+                      </td>
                       <td className="py-2 px-4 flex items-center gap-1">
-                        <button onClick={() => { updateMut.mutate({ id: l.id, nom: editLieu.nom, type: editLieu.type, adresse: editLieu.adresse || undefined, responsable: editLieu.responsable || undefined }); setEditLieu(null); }} className="p-1.5 hover:bg-emerald-50 rounded-lg"><Save className="w-4 h-4 text-emerald-600" /></button>
-                        <button onClick={() => setEditLieu(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4 text-muted-foreground" /></button>
+                        <button
+                          onClick={() => {
+                            updateMut.mutate({
+                              id: l.id,
+                              nom: editLieu.nom,
+                              type: editLieu.type,
+                              adresse: editLieu.adresse || undefined,
+                              responsable: editLieu.responsable || undefined,
+                            });
+                            setEditLieu(null);
+                          }}
+                          className="p-1.5 hover:bg-emerald-50 rounded-lg"
+                        >
+                          <Save className="w-4 h-4 text-emerald-600" />
+                        </button>
+                        <button
+                          onClick={() => setEditLieu(null)}
+                          className="p-1.5 hover:bg-gray-100 rounded-lg"
+                        >
+                          <X className="w-4 h-4 text-muted-foreground" />
+                        </button>
                       </td>
                     </>
                   ) : (
                     <>
-                      <td className="py-3 px-4 font-medium text-foreground">{l.nom}</td>
-                      <td className="py-3 px-4 text-xs">{LIEU_TYPE_LABELS[l.type as keyof typeof LIEU_TYPE_LABELS] || l.type}</td>
-                      <td className="py-3 px-4 text-xs">{l.commune?.name || "—"}</td>
+                      <td className="py-3 px-4 font-medium text-foreground">
+                        {l.nom}
+                      </td>
+                      <td className="py-3 px-4 text-xs">
+                        {LIEU_TYPE_LABELS[
+                          l.type as keyof typeof LIEU_TYPE_LABELS
+                        ] || l.type}
+                      </td>
+                      <td className="py-3 px-4 text-xs">
+                        {l.commune?.name || "—"}
+                      </td>
                       <td className="py-3 px-4 text-xs">{l.adresse || "—"}</td>
-                      <td className="py-3 px-4 text-xs">{l.responsable || "—"}</td>
+                      <td className="py-3 px-4 text-xs">
+                        {l.responsable || "—"}
+                      </td>
                       <td className="py-3 px-4 flex items-center gap-1">
-                        <button onClick={() => setEditLieu({ id: l.id, nom: l.nom, type: l.type, adresse: l.adresse, responsable: l.responsable })} className="p-1.5 hover:bg-blue-50 rounded-lg" title="Modifier">
+                        <button
+                          onClick={() =>
+                            setEditLieu({
+                              id: l.id,
+                              nom: l.nom,
+                              type: l.type,
+                              adresse: l.adresse,
+                              responsable: l.responsable,
+                            })
+                          }
+                          className="p-1.5 hover:bg-blue-50 rounded-lg"
+                          title="Modifier"
+                        >
                           <Edit3 className="w-4 h-4 text-blue-500" />
                         </button>
-                        <button onClick={() => { if (confirm("Supprimer ce lieu ?")) deleteMut.mutate({ id: l.id }); }} className="p-1.5 hover:bg-red-50 rounded-lg" title="Supprimer">
+                        <button
+                          onClick={() => {
+                            if (confirm("Supprimer ce lieu ?"))
+                              deleteMut.mutate({ id: l.id });
+                          }}
+                          className="p-1.5 hover:bg-red-50 rounded-lg"
+                          title="Supprimer"
+                        >
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </button>
                       </td>
@@ -2604,7 +2843,9 @@ function AdminLieuxTab() {
             </tbody>
           </table>
           {(!data?.items || data.items.length === 0) && (
-            <p className="text-sm text-muted-foreground text-center py-8">Aucun lieu trouvé</p>
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Aucun lieu trouvé
+            </p>
           )}
         </div>
       )}
@@ -2618,9 +2859,11 @@ function AdminCommunesTab() {
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteCommune.useMutation({
     onSuccess: () => utils.admin.getCommunes.invalidate(),
+    onError: (e) => alert("Erreur suppression: " + e.message),
   });
   const updateMut = trpc.admin.updateCommune.useMutation({
     onSuccess: () => utils.admin.getCommunes.invalidate(),
+    onError: (e) => alert("Erreur mise à jour: " + e.message),
   });
   const createMut = trpc.admin.createCommune.useMutation({
     onSuccess: () => {
@@ -2635,6 +2878,7 @@ function AdminCommunesTab() {
         description: "",
       });
     },
+    onError: (e) => alert("Erreur création: " + e.message),
   });
   // District CRUD
   const createDistrictMut = trpc.admin.createDistrict.useMutation({
@@ -2642,15 +2886,18 @@ function AdminCommunesTab() {
       utils.admin.getDistricts.invalidate();
       setNewDistrict({ name: "", description: "" });
     },
+    onError: (e) => alert("Erreur création district: " + e.message),
   });
   const updateDistrictMut = trpc.admin.updateDistrict.useMutation({
     onSuccess: () => {
       utils.admin.getDistricts.invalidate();
       setEditDistrict(null);
     },
+    onError: (e) => alert("Erreur mise à jour district: " + e.message),
   });
   const deleteDistrictMut = trpc.admin.deleteDistrict.useMutation({
     onSuccess: () => utils.admin.getDistricts.invalidate(),
+    onError: (e) => alert("Erreur suppression district: " + e.message),
   });
 
   const [showCreate, setShowCreate] = useState(false);
@@ -2924,6 +3171,7 @@ function AdminCommunesTab() {
                 if (!newCommune.name) return;
                 createMut.mutate({
                   name: newCommune.name,
+                  description: newCommune.description || undefined,
                   population: newCommune.population || undefined,
                   superficie: newCommune.superficie || undefined,
                   bourgmestre: newCommune.bourgmestre || undefined,
@@ -3124,9 +3372,11 @@ function AdminSignalementsTab() {
   const utils = trpc.useUtils();
   const updateMut = trpc.admin.updateSignalement.useMutation({
     onSuccess: () => utils.admin.getSignalements.invalidate(),
+    onError: (e) => alert("Erreur: " + e.message),
   });
   const deleteMut = trpc.admin.deleteSignalement.useMutation({
     onSuccess: () => utils.admin.getSignalements.invalidate(),
+    onError: (e) => alert("Erreur suppression: " + e.message),
   });
 
   const STATUTS = ["", "EN_ATTENTE", "EN_COURS", "RESOLU", "REJETE"];
@@ -3247,9 +3497,11 @@ function AdminAlertesTab() {
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteAlerte.useMutation({
     onSuccess: () => utils.admin.getAlertes.invalidate(),
+    onError: (e) => alert("Erreur suppression: " + e.message),
   });
   const toggleMut = trpc.admin.updateAlerte.useMutation({
     onSuccess: () => utils.admin.getAlertes.invalidate(),
+    onError: (e) => alert("Erreur: " + e.message),
   });
 
   const [showAdd, setShowAdd] = useState(false);
@@ -3260,6 +3512,7 @@ function AdminAlertesTab() {
       setShowAdd(false);
       setForm({ titre: "", message: "", type: "INFO" });
     },
+    onError: (e) => alert("Erreur création: " + e.message),
   });
 
   const TYPE_COLORS: Record<string, string> = {
