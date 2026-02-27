@@ -1489,7 +1489,7 @@ function AdminDocumentsTab() {
   const [search, setSearch] = useState("");
   const [editDoc, setEditDoc] = useState<any>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const { data, isLoading } = trpc.admin.getDocuments.useQuery({
+  const { data, isLoading, error } = trpc.admin.getDocuments.useQuery({
     search: search || undefined,
   });
   const utils = trpc.useUtils();
@@ -1536,6 +1536,11 @@ function AdminDocumentsTab() {
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20"
         />
       </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          <strong>Erreur:</strong> {error.message}
+        </div>
+      )}
       {isLoading ? (
         <div className="flex justify-center py-10">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -1940,7 +1945,7 @@ function AdminServicesTab() {
     procedure: "",
     conditionsParticulieres: "",
   });
-  const { data, isLoading } = trpc.admin.getServices.useQuery({
+  const { data, isLoading, error } = trpc.admin.getServices.useQuery({
     search: search || undefined,
   });
   const { data: lieuxData } = trpc.admin.getLieux.useQuery({});
@@ -2178,6 +2183,11 @@ function AdminServicesTab() {
           className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20"
         />
       </div>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          <strong>Erreur:</strong> {error.message}
+        </div>
+      )}
       {isLoading ? (
         <div className="flex justify-center py-10">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -2494,7 +2504,7 @@ function EditServiceModal({
 }
 
 function AdminLieuxTab() {
-  const { data, isLoading } = trpc.admin.getLieux.useQuery({});
+  const { data, isLoading, error } = trpc.admin.getLieux.useQuery({});
   const { data: communes } = trpc.admin.getCommunes.useQuery({});
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteLieu.useMutation({
@@ -2674,6 +2684,11 @@ function AdminLieuxTab() {
         </div>
       )}
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          <strong>Erreur:</strong> {error.message}
+        </div>
+      )}
       {isLoading ? (
         <div className="flex justify-center py-10">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -2854,7 +2869,11 @@ function AdminLieuxTab() {
 }
 
 function AdminCommunesTab() {
-  const { data: communes, isLoading } = trpc.admin.getCommunes.useQuery({});
+  const {
+    data: communes,
+    isLoading,
+    error,
+  } = trpc.admin.getCommunes.useQuery({});
   const { data: districts } = trpc.admin.getDistricts.useQuery();
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteCommune.useMutation({
@@ -3188,6 +3207,11 @@ function AdminCommunesTab() {
         </div>
       )}
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          <strong>Erreur:</strong> {error.message}
+        </div>
+      )}
       {isLoading ? (
         <div className="flex justify-center py-10">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
