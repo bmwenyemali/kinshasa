@@ -59,6 +59,18 @@ model User {
 // GEOGRAPHIC TABLES
 // ============================================
 
+model District {
+  id          String   @id @default(uuid())
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  communes Commune[]
+
+  @@map("districts")
+}
+
 model Commune {
   id          String   @id @default(uuid())
   name        String   @unique @db.VarChar(100)
@@ -66,6 +78,7 @@ model Commune {
   population  Int?
   superficie  Float?   // en km²
   bourgmestre String?  @db.VarChar(150)
+  districtId  String?  @map("district_id")
   latitude    Decimal? @db.Decimal(10, 8)
   longitude   Decimal? @db.Decimal(11, 8)
   imageUrl    String?  @map("image_url")
@@ -73,9 +86,11 @@ model Commune {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
+  district  District?  @relation(fields: [districtId], references: [id])
   quartiers Quartier[]
   lieux     Lieu[]
 
+  @@index([districtId])
   @@map("communes")
 }
 
@@ -248,6 +263,7 @@ model Ministre {
   gouvernoratId  String   @map("gouvernorat_id")
   nom            String   @db.VarChar(200)
   portefeuille   String   @db.VarChar(200)  // Ministère
+  type           String   @default("MINISTRE") @db.VarChar(50) // MINISTRE or COMMISSAIRE_GENERAL
   photoUrl       String?  @map("photo_url")
   telephone      String?  @db.VarChar(50)
   email          String?  @db.VarChar(100)
@@ -375,6 +391,36 @@ model Favori {
   @@unique([userId, lieuId])
   @@index([userId])
   @@map("favoris")
+}
+
+// ============================================
+// DOCUMENT REFERENCE TABLE
+// ============================================
+
+model Document {
+  id               String           @id @default(uuid())
+  nom              String           @db.VarChar(300)
+  slug             String           @unique @db.VarChar(300) // URL-friendly, accent-stripped
+  categorie        ServiceCategorie
+  description      String?          @db.Text
+  definition       String?          @db.Text    // What is this document
+  role             String?          @db.Text    // What it's used for
+  prixEstimatif    Decimal?         @map("prix_estimatif") @db.Decimal(12, 2)
+  devise           String           @default("FC") @db.VarChar(10)
+  delaiEstimatif   String?          @map("delai_estimatif") @db.VarChar(100)
+  documentsRequis  String[]         @map("documents_requis")     // prerequisite docs
+  procedure        String?          @db.Text    // Step-by-step
+  ouObtenir        String?          @map("ou_obtenir") @db.Text  // Where to get it
+  conseils         String?          @db.Text    // Practical tips
+  baseJuridique    String?          @map("base_juridique") @db.Text
+  aliases          String[]         // alternative search names ("passe port", "deces", etc.)
+  actif            Boolean          @default(true)
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@index([categorie])
+  @@index([nom])
+  @@map("documents")
 }
 
 // ============================================

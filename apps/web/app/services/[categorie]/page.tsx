@@ -29,7 +29,18 @@ import {
   ArrowLeft,
   ExternalLink,
   Search,
+  Lightbulb,
+  ScrollText,
+  ChevronDown,
+  Info,
 } from "lucide-react";
+
+type ServiceTab =
+  | "apropos"
+  | "indicateurs"
+  | "conseils"
+  | "services"
+  | "documents";
 
 // Category metadata — rich descriptions, tips, key info
 const CATEGORY_META: Record<
@@ -260,11 +271,18 @@ export default function ServiceCategoryPage() {
   const params = useParams();
   const categorie = (params.categorie as string)?.toUpperCase();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<ServiceTab>("apropos");
 
   const meta = CATEGORY_META[categorie];
   const Icon = meta?.icon || HelpCircle;
 
   const { data, isLoading } = trpc.services.getCategoryDetails.useQuery(
+    { categorie: categorie as any },
+    { enabled: !!categorie && !!meta },
+  );
+
+  // Fetch documents for this category
+  const { data: documents } = trpc.documents.getAll.useQuery(
     { categorie: categorie as any },
     { enabled: !!categorie && !!meta },
   );
@@ -286,12 +304,42 @@ export default function ServiceCategoryPage() {
     );
   }
 
-  const filteredServices = data?.allServices.filter(
-    (s) =>
-      !searchQuery ||
-      s.nomService.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.lieuNom?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  // Deduplicated services (by name) for the "Liste des services" tab
+  const uniqueServices = data?.services || [];
+
+  const filteredServices = searchQuery
+    ? data?.allServices?.filter(
+        (s) =>
+          s.nomService.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.lieuNom?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : null;
+
+  const filteredDocuments = searchQuery
+    ? documents?.filter(
+        (d) =>
+          d.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          d.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : documents;
+
+  const tabs: { id: ServiceTab; label: string; icon: any; count?: number }[] = [
+    { id: "apropos", label: "À propos", icon: Info },
+    { id: "indicateurs", label: "Indicateurs", icon: Activity },
+    { id: "conseils", label: "Conseils", icon: Lightbulb },
+    {
+      id: "services",
+      label: "Services",
+      icon: FileText,
+      count: uniqueServices.length,
+    },
+    {
+      id: "documents",
+      label: "Documents",
+      icon: ScrollText,
+      count: filteredDocuments?.length || 0,
+    },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -341,10 +389,51 @@ export default function ServiceCategoryPage() {
                   </span>
                   <span className="text-white/70 text-sm ml-2">communes</span>
                 </div>
+                {documents && documents.length > 0 && (
+                  <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-white/10">
+                    <span className="text-2xl font-bold">
+                      {documents.length}
+                    </span>
+                    <span className="text-white/70 text-sm ml-2">
+                      documents
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </section>
+
+        {/* Tab navigation */}
+        <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-lg border-b border-border">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="flex gap-1 overflow-x-auto py-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "bg-primary text-white shadow-md"
+                      : "text-muted-foreground hover:bg-gray-100"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                  {tab.count !== undefined && (
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded-full ${
+                        activeTab === tab.id ? "bg-white/20" : "bg-gray-200"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <div className="max-w-6xl mx-auto px-4 py-10">
           {isLoading ? (
@@ -352,62 +441,227 @@ export default function ServiceCategoryPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Main content */}
-              <div className="lg:col-span-2 space-y-8">
-                {/* Description */}
-                <div className="bg-white rounded-2xl border border-border p-6">
-                  <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-primary" />À propos
-                  </h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {meta.description}
-                  </p>
-                  <div className="mt-4 inline-flex items-center gap-2 text-sm bg-primary/5 text-primary px-3 py-1.5 rounded-lg">
-                    <Landmark className="w-4 h-4" />
-                    Tutelle: {meta.ministreTutelle}
-                  </div>
-                  {meta.legalBasis && (
-                    <p className="text-xs text-muted-foreground mt-3 italic">
-                      Base légale: {meta.legalBasis}
-                    </p>
-                  )}
-                </div>
+            <>
+              {/* TAB: À PROPOS */}
+              {activeTab === "apropos" && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white rounded-2xl border border-border p-6">
+                      <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2">
+                        <BookOpen className="w-5 h-5 text-primary" />À propos
+                      </h2>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {meta.description}
+                      </p>
+                      <div className="mt-4 inline-flex items-center gap-2 text-sm bg-primary/5 text-primary px-3 py-1.5 rounded-lg">
+                        <Landmark className="w-4 h-4" />
+                        Tutelle: {meta.ministreTutelle}
+                      </div>
+                      {meta.legalBasis && (
+                        <p className="text-xs text-muted-foreground mt-3 italic">
+                          Base légale: {meta.legalBasis}
+                        </p>
+                      )}
+                    </div>
 
-                {/* Key info */}
-                {meta.keyInfo.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-border p-6">
-                    <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-amber-500" />
-                      Indicateurs & informations clés
-                    </h2>
-                    <div className="space-y-3">
-                      {meta.keyInfo.map((info, i) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-foreground">
-                            {info}
-                          </span>
-                        </div>
-                      ))}
+                    {/* Quick overview cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white rounded-xl border border-border p-4 text-center">
+                        <MapPin className="w-6 h-6 text-primary mx-auto mb-2" />
+                        <p className="text-2xl font-bold">
+                          {data?.totalLieux || 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Lieux</p>
+                      </div>
+                      <div className="bg-white rounded-xl border border-border p-4 text-center">
+                        <FileText className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
+                        <p className="text-2xl font-bold">
+                          {uniqueServices.length}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Types de services
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-xl border border-border p-4 text-center">
+                        <ScrollText className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+                        <p className="text-2xl font-bold">
+                          {documents?.length || 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Documents
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-xl border border-border p-4 text-center">
+                        <Users className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                        <p className="text-2xl font-bold">
+                          {data?.totalCommunes || 0}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Communes
+                        </p>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                {/* Services list */}
-                <div className="bg-white rounded-2xl border border-border p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-primary" />
-                      Services disponibles
-                    </h2>
-                    <span className="text-sm text-muted-foreground">
-                      {data?.services.length || 0} types de services
-                    </span>
+                  {/* Sidebar */}
+                  <div className="space-y-6">
+                    {/* Lieux */}
+                    <div className="bg-white rounded-2xl border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 text-sm">
+                        <MapPin className="w-4 h-4 text-primary" />
+                        Lieux ({data?.lieux.length || 0})
+                      </h3>
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                        {data?.lieux.slice(0, 20).map((l) => (
+                          <Link
+                            key={l.id}
+                            href={`/lieux/${l.id}`}
+                            className="block"
+                          >
+                            <div className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <MapPin className="w-4 h-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-foreground truncate">
+                                  {l.nom}
+                                </p>
+                                {l.commune && (
+                                  <p className="text-[10px] text-muted-foreground">
+                                    {l.commune}
+                                  </p>
+                                )}
+                              </div>
+                              {l.verified && (
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                              )}
+                            </div>
+                          </Link>
+                        ))}
+                        {(!data?.lieux || data.lieux.length === 0) && (
+                          <p className="text-xs text-muted-foreground text-center py-4">
+                            Aucun lieu enregistré
+                          </p>
+                        )}
+                      </div>
+                      {data && data.lieux.length > 0 && (
+                        <Link
+                          href={`/carte?categorie=${categorie}`}
+                          className="flex items-center justify-center gap-1 mt-3 text-xs text-primary font-medium hover:underline"
+                        >
+                          Voir sur la carte <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* Signaler */}
+                    <Link href="/signaler" className="block">
+                      <div className="bg-red-50 rounded-2xl border border-red-200 p-5 hover:shadow-md transition-shadow">
+                        <h3 className="font-bold text-red-800 mb-1 text-sm flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4" />
+                          Signaler un problème
+                        </h3>
+                        <p className="text-xs text-red-700">
+                          Prix incorrect, corruption, information erronée ?
+                          Signalez-le.
+                        </p>
+                      </div>
+                    </Link>
                   </div>
+                </div>
+              )}
 
+              {/* TAB: INDICATEURS */}
+              {activeTab === "indicateurs" && (
+                <div className="max-w-3xl mx-auto">
+                  {meta.keyInfo.length > 0 ? (
+                    <div className="bg-white rounded-2xl border border-border p-8">
+                      <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-amber-500" />
+                        Indicateurs & informations clés
+                      </h2>
+                      <div className="space-y-4">
+                        {meta.keyInfo.map((info, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl"
+                          >
+                            <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-foreground">
+                              {info}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {meta.legalBasis && (
+                        <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                          <h4 className="font-semibold text-blue-800 text-sm mb-1">
+                            Base juridique
+                          </h4>
+                          <p className="text-xs text-blue-700">
+                            {meta.legalBasis}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-20">
+                      <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Indicateurs non disponibles
+                      </h3>
+                      <p className="text-muted-foreground mt-1">
+                        Les données seront ajoutées prochainement.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB: CONSEILS */}
+              {activeTab === "conseils" && (
+                <div className="max-w-3xl mx-auto">
+                  {meta.tips.length > 0 ? (
+                    <div className="bg-amber-50 rounded-2xl border border-amber-200 p-8">
+                      <h2 className="text-xl font-bold text-amber-800 mb-6 flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5" />
+                        Conseils pratiques
+                      </h2>
+                      <div className="space-y-4">
+                        {meta.tips.map((tip, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start gap-3 p-3 bg-white/60 rounded-xl"
+                          >
+                            <span className="text-amber-500 text-lg mt-0.5">
+                              💡
+                            </span>
+                            <span className="text-sm text-amber-900">
+                              {tip}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-20">
+                      <Lightbulb className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Aucun conseil disponible
+                      </h3>
+                      <p className="text-muted-foreground mt-1">
+                        Les conseils seront ajoutés prochainement.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB: SERVICES */}
+              {activeTab === "services" && (
+                <div className="space-y-6">
                   {/* Search */}
-                  <div className="relative mb-4">
+                  <div className="relative max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <input
                       type="text"
@@ -418,211 +672,215 @@ export default function ServiceCategoryPage() {
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    {(searchQuery ? filteredServices : data?.allServices)
-                      ?.slice(0, 30)
-                      .map((s) => (
-                        <div
-                          key={s.id}
-                          className="border border-border rounded-xl p-4 hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-foreground text-sm">
-                                {s.nomService}
+                  {/* Distinct services summary */}
+                  {!searchQuery && uniqueServices.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-border p-6">
+                      <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-primary" />
+                        Types de services ({uniqueServices.length})
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {uniqueServices.map((s, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between p-3 border border-border rounded-xl hover:shadow-sm transition-shadow"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm text-foreground">
+                                {s.name}
                               </h4>
-                              {s.lieuNom && (
-                                <Link
-                                  href={`/lieux/${s.lieuId}`}
-                                  className="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5"
-                                >
-                                  <MapPin className="w-3 h-3" /> {s.lieuNom}
-                                  {s.commune && (
-                                    <span className="text-muted-foreground">
-                                      {" "}
-                                      — {s.commune}
-                                    </span>
-                                  )}
-                                </Link>
-                              )}
-                              {s.description && (
-                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                  {s.description}
-                                </p>
-                              )}
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Disponible dans {s.count} lieu
+                                {s.count > 1 ? "x" : ""}
+                              </p>
                             </div>
-                            <div className="flex flex-col items-end gap-1 ml-4">
-                              {s.prixOfficiel !== null && (
-                                <span className="text-sm font-bold text-emerald-600">
-                                  {s.prixOfficiel.toLocaleString()} {s.devise}
-                                </span>
-                              )}
-                              {s.delai && (
-                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                  <Clock className="w-3 h-3" /> {s.delai}
+                            <div className="flex flex-col items-end gap-1 ml-3">
+                              {s.avgPrice && (
+                                <span className="text-xs font-bold text-emerald-600">
+                                  ~{Math.round(s.avgPrice).toLocaleString()} FC
                                 </span>
                               )}
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                          {/* Documents */}
-                          {s.documentsRequis &&
-                            s.documentsRequis.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {s.documentsRequis.map(
-                                  (doc: string, i: number) => (
-                                    <span
-                                      key={i}
-                                      className="text-[10px] px-2 py-0.5 bg-gray-100 text-muted-foreground rounded-md"
-                                    >
-                                      📄 {doc}
-                                    </span>
-                                  ),
+                  {/* All services details (shown on search or as expanded view) */}
+                  <div className="bg-white rounded-2xl border border-border p-6">
+                    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      {searchQuery
+                        ? "Résultats de recherche"
+                        : "Tous les services par lieu"}
+                    </h3>
+                    <div className="space-y-3">
+                      {(searchQuery ? filteredServices : data?.allServices)
+                        ?.slice(0, 30)
+                        .map((s) => (
+                          <div
+                            key={s.id}
+                            className="border border-border rounded-xl p-4 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-foreground text-sm">
+                                  {s.nomService}
+                                </h4>
+                                {s.lieuNom && (
+                                  <Link
+                                    href={`/lieux/${s.lieuId}`}
+                                    className="text-xs text-primary hover:underline flex items-center gap-1 mt-0.5"
+                                  >
+                                    <MapPin className="w-3 h-3" /> {s.lieuNom}
+                                    {s.commune && (
+                                      <span className="text-muted-foreground">
+                                        {" "}
+                                        — {s.commune}
+                                      </span>
+                                    )}
+                                  </Link>
+                                )}
+                                {s.description && (
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {s.description}
+                                  </p>
                                 )}
                               </div>
-                            )}
-
-                          {/* Procedure */}
-                          {s.procedure && (
-                            <details className="mt-2">
-                              <summary className="text-xs text-primary cursor-pointer hover:underline">
-                                Voir la procédure
-                              </summary>
-                              <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line bg-gray-50 rounded-lg p-3">
-                                {s.procedure}
-                              </p>
-                            </details>
-                          )}
-                        </div>
-                      ))}
-                    {(!data?.allServices || data.allServices.length === 0) && (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        Aucun service enregistré pour cette catégorie. Les
-                        données seront ajoutées prochainement.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Sidebar */}
-              <div className="space-y-6">
-                {/* Conseils */}
-                {meta.tips.length > 0 && (
-                  <div className="bg-amber-50 rounded-2xl border border-amber-200 p-5">
-                    <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2 text-sm">
-                      <AlertTriangle className="w-4 h-4" />
-                      Conseils pratiques
-                    </h3>
-                    <ul className="space-y-2.5">
-                      {meta.tips.map((tip, i) => (
-                        <li
-                          key={i}
-                          className="text-xs text-amber-900 flex items-start gap-2"
-                        >
-                          <span className="text-amber-500 mt-0.5">💡</span>
-                          {tip}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Lieux */}
-                <div className="bg-white rounded-2xl border border-border p-5">
-                  <h3 className="font-bold text-foreground mb-3 flex items-center gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    Lieux ({data?.lieux.length || 0})
-                  </h3>
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {data?.lieux.slice(0, 20).map((l) => (
-                      <Link
-                        key={l.id}
-                        href={`/lieux/${l.id}`}
-                        className="block"
-                      >
-                        <div className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-gray-50 transition-colors">
-                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <MapPin className="w-4 h-4 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-foreground truncate">
-                              {l.nom}
-                            </p>
-                            {l.commune && (
-                              <p className="text-[10px] text-muted-foreground">
-                                {l.commune}
-                              </p>
+                              <div className="flex flex-col items-end gap-1 ml-4">
+                                {s.prixOfficiel !== null && (
+                                  <span className="text-sm font-bold text-emerald-600">
+                                    {s.prixOfficiel.toLocaleString()} {s.devise}
+                                  </span>
+                                )}
+                                {s.delai && (
+                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                    <Clock className="w-3 h-3" /> {s.delai}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {s.documentsRequis &&
+                              s.documentsRequis.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {s.documentsRequis.map(
+                                    (doc: string, i: number) => (
+                                      <span
+                                        key={i}
+                                        className="text-[10px] px-2 py-0.5 bg-gray-100 text-muted-foreground rounded-md"
+                                      >
+                                        📄 {doc}
+                                      </span>
+                                    ),
+                                  )}
+                                </div>
+                              )}
+                            {s.procedure && (
+                              <details className="mt-2">
+                                <summary className="text-xs text-primary cursor-pointer hover:underline">
+                                  Voir la procédure
+                                </summary>
+                                <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line bg-gray-50 rounded-lg p-3">
+                                  {s.procedure}
+                                </p>
+                              </details>
                             )}
                           </div>
-                          {l.verified && (
-                            <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                          )}
-                        </div>
-                      </Link>
-                    ))}
-                    {(!data?.lieux || data.lieux.length === 0) && (
-                      <p className="text-xs text-muted-foreground text-center py-4">
-                        Aucun lieu enregistré
-                      </p>
-                    )}
-                  </div>
-                  {data && data.lieux.length > 0 && (
-                    <Link
-                      href={`/carte?categorie=${categorie}`}
-                      className="flex items-center justify-center gap-1 mt-3 text-xs text-primary font-medium hover:underline"
-                    >
-                      Voir sur la carte <ExternalLink className="w-3 h-3" />
-                    </Link>
-                  )}
-                </div>
-
-                {/* Quick service names */}
-                {data && data.services.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-border p-5">
-                    <h3 className="font-bold text-foreground mb-3 text-sm">
-                      Services les plus offerts
-                    </h3>
-                    <div className="space-y-2">
-                      {data.services.slice(0, 10).map((s, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-xs text-foreground">
-                            {s.name}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {s.avgPrice && (
-                              <span className="text-[10px] text-emerald-600 font-medium">
-                                ~{Math.round(s.avgPrice).toLocaleString()} FC
-                              </span>
-                            )}
-                            <span className="text-[10px] bg-gray-100 text-muted-foreground px-1.5 py-0.5 rounded">
-                              {s.count}x
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      {(!data?.allServices ||
+                        data.allServices.length === 0) && (
+                        <p className="text-sm text-muted-foreground text-center py-8">
+                          Aucun service enregistré pour cette catégorie.
+                        </p>
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Signaler */}
-                <Link href="/signaler" className="block">
-                  <div className="bg-red-50 rounded-2xl border border-red-200 p-5 hover:shadow-md transition-shadow">
-                    <h3 className="font-bold text-red-800 mb-1 text-sm flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" />
-                      Signaler un problème
-                    </h3>
-                    <p className="text-xs text-red-700">
-                      Prix incorrect, corruption, information erronée ?
-                      Signalez-le.
-                    </p>
+              {/* TAB: DOCUMENTS */}
+              {activeTab === "documents" && (
+                <div className="space-y-6">
+                  {/* Search */}
+                  <div className="relative max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Rechercher un document..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
                   </div>
-                </Link>
-              </div>
-            </div>
+
+                  {filteredDocuments && filteredDocuments.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredDocuments.map((doc) => (
+                        <Link
+                          key={doc.id}
+                          href={`/documents/${doc.slug}`}
+                          className="block"
+                        >
+                          <div className="bg-white rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow h-full">
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <ScrollText className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-foreground text-sm">
+                                  {doc.nom}
+                                </h4>
+                                {doc.description && (
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {doc.description}
+                                  </p>
+                                )}
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                  {doc.prixEstimatif && (
+                                    <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                      <DollarSign className="w-3 h-3" />
+                                      {String(doc.prixEstimatif)}{" "}
+                                      {doc.devise || "FC"}
+                                    </span>
+                                  )}
+                                  {doc.delaiEstimatif && (
+                                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {String(doc.delaiEstimatif)}
+                                    </span>
+                                  )}
+                                </div>
+                                {doc.definition && (
+                                  <p className="text-xs text-muted-foreground mt-2 italic line-clamp-2">
+                                    {doc.definition}
+                                  </p>
+                                )}
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-20">
+                      <ScrollText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {searchQuery
+                          ? "Aucun document trouvé"
+                          : "Aucun document enregistré"}
+                      </h3>
+                      <p className="text-muted-foreground mt-1">
+                        {searchQuery
+                          ? "Essayez avec d'autres mots-clés."
+                          : "Les documents seront ajoutés prochainement."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

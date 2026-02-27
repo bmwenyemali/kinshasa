@@ -11,7 +11,21 @@ export const villeRouter = router({
         },
       },
     });
-    return gouvernorat;
+    if (!gouvernorat) return null;
+
+    // Separate ministers and commissaires généraux
+    const ministres = gouvernorat.ministres.filter(
+      (m) => (m as any).type !== "COMMISSAIRE_GENERAL",
+    );
+    const commissaires = gouvernorat.ministres.filter(
+      (m) => (m as any).type === "COMMISSAIRE_GENERAL",
+    );
+
+    return {
+      ...gouvernorat,
+      ministres,
+      commissaires,
+    };
   }),
 
   // Get all deputes

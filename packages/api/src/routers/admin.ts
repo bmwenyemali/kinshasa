@@ -15,6 +15,10 @@ export const adminRouter = router({
       totalDeputes,
       totalProjets,
       totalSignalements,
+      totalDocuments,
+      totalDistricts,
+      totalMinistres,
+      totalAlertes,
     ] = await Promise.all([
       ctx.prisma.user.count(),
       ctx.prisma.lieu.count(),
@@ -26,6 +30,10 @@ export const adminRouter = router({
       ctx.prisma.depute.count(),
       ctx.prisma.projet.count(),
       ctx.prisma.signalement.count(),
+      ctx.prisma.document.count(),
+      ctx.prisma.district.count(),
+      ctx.prisma.ministre.count(),
+      ctx.prisma.alerte.count(),
     ]);
 
     // Lieux by type
@@ -60,6 +68,10 @@ export const adminRouter = router({
       totalDeputes,
       totalProjets,
       totalSignalements,
+      totalDocuments,
+      totalDistricts,
+      totalMinistres,
+      totalAlertes,
       lieuxByType: lieuxByType.map((l) => ({
         type: l.type,
         count: l._count.id,
@@ -370,5 +382,492 @@ export const adminRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       return ctx.prisma.projet.delete({ where: { id: input.id } });
+    }),
+
+  // ============ CRUD for Documents ============
+  getDocuments: publicProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          categorie: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: any = {};
+      if (input?.search) {
+        where.OR = [
+          { nom: { contains: input.search, mode: "insensitive" } },
+          { description: { contains: input.search, mode: "insensitive" } },
+        ];
+      }
+      if (input?.categorie) where.categorie = input.categorie;
+      const [items, total] = await Promise.all([
+        ctx.prisma.document.findMany({
+          where,
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+          orderBy: { nom: "asc" },
+        }),
+        ctx.prisma.document.count({ where }),
+      ]);
+      return { items, total };
+    }),
+
+  createDocument: publicProcedure
+    .input(
+      z.object({
+        nom: z.string().min(1),
+        slug: z.string().min(1),
+        categorie: z.string(),
+        description: z.string().optional(),
+        definition: z.string().optional(),
+        role: z.string().optional(),
+        prixEstimatif: z.string().optional(),
+        devise: z.string().optional(),
+        delaiEstimatif: z.string().optional(),
+        documentsRequis: z.array(z.string()).optional(),
+        procedure: z.string().optional(),
+        ouObtenir: z.string().optional(),
+        conseils: z.string().optional(),
+        baseJuridique: z.string().optional(),
+        aliases: z.array(z.string()).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.document.create({ data: input as any });
+    }),
+
+  updateDocument: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        nom: z.string().optional(),
+        slug: z.string().optional(),
+        categorie: z.string().optional(),
+        description: z.string().optional(),
+        definition: z.string().optional(),
+        role: z.string().optional(),
+        prixEstimatif: z.string().optional(),
+        devise: z.string().optional(),
+        delaiEstimatif: z.string().optional(),
+        documentsRequis: z.array(z.string()).optional(),
+        procedure: z.string().optional(),
+        ouObtenir: z.string().optional(),
+        conseils: z.string().optional(),
+        baseJuridique: z.string().optional(),
+        aliases: z.array(z.string()).optional(),
+        actif: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.document.update({ where: { id }, data: data as any });
+    }),
+
+  deleteDocument: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.document.delete({ where: { id: input.id } });
+    }),
+
+  // ============ CRUD for Communes ============
+  getCommunes: publicProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          districtId: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: any = {};
+      if (input?.search) {
+        where.name = { contains: input.search, mode: "insensitive" };
+      }
+      if (input?.districtId) where.districtId = input.districtId;
+      const [items, total] = await Promise.all([
+        ctx.prisma.commune.findMany({
+          where,
+          include: { district: { select: { name: true } } },
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+          orderBy: { name: "asc" },
+        }),
+        ctx.prisma.commune.count({ where }),
+      ]);
+      return { items, total };
+    }),
+
+  createCommune: publicProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        population: z.number().optional(),
+        superficie: z.number().optional(),
+        bourgmestre: z.string().optional(),
+        districtId: z.string().uuid().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.commune.create({ data: input as any });
+    }),
+
+  updateCommune: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        population: z.number().optional(),
+        superficie: z.number().optional(),
+        bourgmestre: z.string().optional(),
+        districtId: z.string().uuid().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.commune.update({ where: { id }, data: data as any });
+    }),
+
+  deleteCommune: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.commune.delete({ where: { id: input.id } });
+    }),
+
+  // ============ CRUD for Districts ============
+  getDistricts: publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.district.findMany({
+      include: { _count: { select: { communes: true } } },
+      orderBy: { name: "asc" },
+    });
+  }),
+
+  createDistrict: publicProcedure
+    .input(
+      z.object({ name: z.string().min(1), description: z.string().optional() }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.district.create({ data: input });
+    }),
+
+  updateDistrict: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.district.update({ where: { id }, data });
+    }),
+
+  deleteDistrict: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.district.delete({ where: { id: input.id } });
+    }),
+
+  // ============ CRUD for Services ============
+  getServices: publicProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          categorie: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: any = {};
+      if (input?.search) {
+        where.OR = [
+          { nomService: { contains: input.search, mode: "insensitive" } },
+          { description: { contains: input.search, mode: "insensitive" } },
+        ];
+      }
+      if (input?.categorie) where.categorie = input.categorie;
+      const [items, total] = await Promise.all([
+        ctx.prisma.servicePropose.findMany({
+          where,
+          include: { lieu: { select: { id: true, nom: true } } },
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+          orderBy: { nomService: "asc" },
+        }),
+        ctx.prisma.servicePropose.count({ where }),
+      ]);
+      return { items, total };
+    }),
+
+  createService: publicProcedure
+    .input(
+      z.object({
+        lieuId: z.string().uuid(),
+        nomService: z.string().min(1),
+        categorie: z.string(),
+        description: z.string().optional(),
+        prixOfficiel: z.number().optional(),
+        devise: z.string().default("FC"),
+        delai: z.string().optional(),
+        documentsRequis: z.array(z.string()).optional(),
+        procedure: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.servicePropose.create({ data: input as any });
+    }),
+
+  updateService: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        nomService: z.string().optional(),
+        categorie: z.string().optional(),
+        description: z.string().optional(),
+        prixOfficiel: z.number().optional(),
+        devise: z.string().optional(),
+        delai: z.string().optional(),
+        documentsRequis: z.array(z.string()).optional(),
+        procedure: z.string().optional(),
+        actif: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.servicePropose.update({
+        where: { id },
+        data: data as any,
+      });
+    }),
+
+  deleteService: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.servicePropose.delete({ where: { id: input.id } });
+    }),
+
+  // ============ Signalements ============
+  getSignalements: publicProcedure
+    .input(
+      z
+        .object({
+          statut: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: any = {};
+      if (input?.statut) where.statut = input.statut;
+      const [items, total] = await Promise.all([
+        ctx.prisma.signalement.findMany({
+          where,
+          include: {
+            lieu: { select: { id: true, nom: true } },
+          },
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+          orderBy: { createdAt: "desc" },
+        }),
+        ctx.prisma.signalement.count({ where }),
+      ]);
+      return { items, total };
+    }),
+
+  updateSignalement: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        statut: z.string().optional(),
+        reponseAdmin: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.signalement.update({
+        where: { id },
+        data: data as any,
+      });
+    }),
+
+  deleteSignalement: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.signalement.delete({ where: { id: input.id } });
+    }),
+
+  // ============ Alertes ============
+  getAlertes: publicProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const [items, total] = await Promise.all([
+        ctx.prisma.alerte.findMany({
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+          orderBy: { createdAt: "desc" },
+        }),
+        ctx.prisma.alerte.count(),
+      ]);
+      return { items, total };
+    }),
+
+  createAlerte: publicProcedure
+    .input(
+      z.object({
+        titre: z.string().min(1),
+        message: z.string().min(1),
+        type: z.string().default("INFO"),
+        communeId: z.string().uuid().optional(),
+        active: z.boolean().default(true),
+        dateExpiration: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.alerte.create({
+        data: {
+          ...input,
+          dateExpiration: input.dateExpiration
+            ? new Date(input.dateExpiration)
+            : null,
+        } as any,
+      });
+    }),
+
+  updateAlerte: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        titre: z.string().optional(),
+        message: z.string().optional(),
+        type: z.string().optional(),
+        active: z.boolean().optional(),
+        dateExpiration: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, dateExpiration, ...rest } = input;
+      return ctx.prisma.alerte.update({
+        where: { id },
+        data: {
+          ...rest,
+          ...(dateExpiration !== undefined
+            ? {
+                dateExpiration: dateExpiration
+                  ? new Date(dateExpiration)
+                  : null,
+              }
+            : {}),
+        } as any,
+      });
+    }),
+
+  deleteAlerte: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.alerte.delete({ where: { id: input.id } });
+    }),
+
+  // ============ Zones de Santé ============
+  getZonesSante: publicProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: any = {};
+      if (input?.search) {
+        where.name = { contains: input.search, mode: "insensitive" };
+      }
+      const [items, total] = await Promise.all([
+        ctx.prisma.zoneSante.findMany({
+          where,
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+          orderBy: { name: "asc" },
+        }),
+        ctx.prisma.zoneSante.count({ where }),
+      ]);
+      return { items, total };
+    }),
+
+  createZoneSante: publicProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        communeId: z.string().uuid().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.zoneSante.create({ data: input as any });
+    }),
+
+  updateZoneSante: publicProcedure
+    .input(z.object({ id: z.string().uuid(), name: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.zoneSante.update({ where: { id }, data });
+    }),
+
+  deleteZoneSante: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.zoneSante.delete({ where: { id: input.id } });
+    }),
+
+  // ============ Quartiers ============
+  getQuartiers: publicProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          communeId: z.string().optional(),
+          limit: z.number().min(1).max(200).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: any = {};
+      if (input?.search) {
+        where.name = { contains: input.search, mode: "insensitive" };
+      }
+      if (input?.communeId) where.communeId = input.communeId;
+      const [items, total] = await Promise.all([
+        ctx.prisma.quartier.findMany({
+          where,
+          include: { commune: { select: { name: true } } },
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+          orderBy: { name: "asc" },
+        }),
+        ctx.prisma.quartier.count({ where }),
+      ]);
+      return { items, total };
     }),
 });

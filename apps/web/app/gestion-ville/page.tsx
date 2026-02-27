@@ -435,6 +435,82 @@ export default function GestionVillePage() {
                   </div>
                 )}
 
+                {/* Commissaires Généraux */}
+                {(gouvernorat as any).commissaires &&
+                  (gouvernorat as any).commissaires.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                        <Award className="w-5 h-5 text-amber-500" />
+                        Commissaires Généraux
+                        <span className="text-sm font-normal text-muted-foreground ml-2">
+                          ({(gouvernorat as any).commissaires.length})
+                        </span>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {(gouvernorat as any).commissaires.map(
+                          (commissaire: any) => (
+                            <div
+                              key={commissaire.id}
+                              className="bg-white rounded-xl border border-amber-200 p-4 hover:shadow-md transition-shadow cursor-pointer bg-gradient-to-br from-white to-amber-50/30"
+                              onClick={() =>
+                                setBioModal({
+                                  nom: commissaire.nom,
+                                  photoUrl: commissaire.photoUrl,
+                                  role: `Commissaire Général — ${commissaire.portefeuille}`,
+                                  biographie: commissaire.biographie,
+                                  telephone: commissaire.telephone,
+                                  email: commissaire.email,
+                                })
+                              }
+                            >
+                              <div className="flex items-start gap-3">
+                                {commissaire.photoUrl ? (
+                                  <img
+                                    src={commissaire.photoUrl}
+                                    alt={commissaire.nom}
+                                    className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 font-bold text-lg flex-shrink-0">
+                                    {commissaire.nom?.charAt(0) || "C"}
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-foreground text-sm leading-tight">
+                                    {commissaire.nom}
+                                  </h4>
+                                  <p className="text-xs text-amber-600 font-medium mt-0.5">
+                                    {commissaire.portefeuille}
+                                  </p>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {commissaire.telephone && (
+                                      <a
+                                        href={`tel:${commissaire.telephone}`}
+                                        className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-1"
+                                      >
+                                        <Phone className="w-3 h-3" />
+                                        {commissaire.telephone}
+                                      </a>
+                                    )}
+                                    {commissaire.email && (
+                                      <a
+                                        href={`mailto:${commissaire.email}`}
+                                        className="text-[11px] text-muted-foreground hover:text-primary flex items-center gap-1"
+                                      >
+                                        <Mail className="w-3 h-3" />
+                                        {commissaire.email}
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                 {/* Gouvernorat Details Section */}
                 <div className="bg-white rounded-2xl border border-border p-6">
                   <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">

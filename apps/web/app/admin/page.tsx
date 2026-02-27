@@ -28,10 +28,24 @@ import {
   Globe,
   Edit3,
   X,
+  ScrollText,
+  Bell,
+  Layers,
+  Activity,
 } from "lucide-react";
 import { LIEU_TYPE_LABELS } from "@kinservices/ui";
 
-type Tab = "dashboard" | "users" | "lieux" | "ville" | "projets";
+type Tab =
+  | "dashboard"
+  | "users"
+  | "lieux"
+  | "ville"
+  | "projets"
+  | "documents"
+  | "signalements"
+  | "services"
+  | "communes"
+  | "alertes";
 
 const ROLE_LABELS: Record<string, string> = {
   VISITEUR: "Visiteur",
@@ -165,6 +179,11 @@ export default function AdminPage() {
     { id: "users" as Tab, label: "Utilisateurs", icon: Users },
     { id: "ville" as Tab, label: "Ville", icon: Landmark },
     { id: "lieux" as Tab, label: "Lieux", icon: MapPin },
+    { id: "services" as Tab, label: "Services", icon: FileText },
+    { id: "documents" as Tab, label: "Documents", icon: ScrollText },
+    { id: "communes" as Tab, label: "Communes", icon: Building2 },
+    { id: "signalements" as Tab, label: "Signalements", icon: AlertTriangle },
+    { id: "alertes" as Tab, label: "Alertes", icon: Bell },
     { id: "projets" as Tab, label: "Projets", icon: FolderKanban },
   ];
 
@@ -229,65 +248,104 @@ export default function AdminPage() {
                       value: stats.totalUsers,
                       icon: Users,
                       color: "text-blue-500",
+                      tab: "users" as Tab,
                     },
                     {
                       label: "Lieux",
                       value: stats.totalLieux,
                       icon: MapPin,
                       color: "text-emerald-500",
+                      tab: "lieux" as Tab,
                     },
                     {
                       label: "Services",
                       value: stats.totalServices,
                       icon: FileText,
                       color: "text-purple-500",
+                      tab: "services" as Tab,
                     },
                     {
-                      label: "Avis",
-                      value: stats.totalAvis,
-                      icon: Star,
-                      color: "text-amber-500",
+                      label: "Documents",
+                      value: stats.totalDocuments,
+                      icon: ScrollText,
+                      color: "text-teal-500",
+                      tab: "documents" as Tab,
                     },
                     {
                       label: "Communes",
                       value: stats.totalCommunes,
                       icon: Building2,
-                      color: "text-teal-500",
-                    },
-                    {
-                      label: "Quartiers",
-                      value: stats.totalQuartiers,
-                      icon: MapPin,
                       color: "text-indigo-500",
+                      tab: "communes" as Tab,
                     },
                     {
-                      label: "Zones de Santé",
-                      value: stats.totalZonesSante,
-                      icon: Shield,
-                      color: "text-red-500",
+                      label: "Districts",
+                      value: stats.totalDistricts,
+                      icon: Layers,
+                      color: "text-violet-500",
+                      tab: "communes" as Tab,
+                    },
+                    {
+                      label: "Ministres",
+                      value: stats.totalMinistres,
+                      icon: Landmark,
+                      color: "text-cyan-500",
+                      tab: "ville" as Tab,
                     },
                     {
                       label: "Députés",
                       value: stats.totalDeputes,
                       icon: Users,
-                      color: "text-cyan-500",
-                    },
-                    {
-                      label: "Projets",
-                      value: stats.totalProjets,
-                      icon: FolderKanban,
-                      color: "text-orange-500",
+                      color: "text-sky-500",
+                      tab: "ville" as Tab,
                     },
                     {
                       label: "Signalements",
                       value: stats.totalSignalements,
                       icon: AlertTriangle,
                       color: "text-yellow-500",
+                      tab: "signalements" as Tab,
+                    },
+                    {
+                      label: "Alertes",
+                      value: stats.totalAlertes,
+                      icon: Bell,
+                      color: "text-red-500",
+                      tab: "alertes" as Tab,
+                    },
+                    {
+                      label: "Avis",
+                      value: stats.totalAvis,
+                      icon: Star,
+                      color: "text-amber-500",
+                      tab: "dashboard" as Tab,
+                    },
+                    {
+                      label: "Zones de Santé",
+                      value: stats.totalZonesSante,
+                      icon: Activity,
+                      color: "text-rose-500",
+                      tab: "dashboard" as Tab,
+                    },
+                    {
+                      label: "Quartiers",
+                      value: stats.totalQuartiers,
+                      icon: MapPin,
+                      color: "text-pink-500",
+                      tab: "dashboard" as Tab,
+                    },
+                    {
+                      label: "Projets",
+                      value: stats.totalProjets,
+                      icon: FolderKanban,
+                      color: "text-orange-500",
+                      tab: "projets" as Tab,
                     },
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className="bg-white rounded-xl border border-border p-4"
+                      className="bg-white rounded-xl border border-border p-4 cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => setActiveTab(stat.tab)}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <stat.icon className={`w-5 h-5 ${stat.color}`} />
@@ -1424,7 +1482,651 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* DOCUMENTS TAB */}
+        {activeTab === "documents" && <AdminDocumentsTab />}
+
+        {/* SERVICES TAB */}
+        {activeTab === "services" && <AdminServicesTab />}
+
+        {/* COMMUNES TAB */}
+        {activeTab === "communes" && <AdminCommunesTab />}
+
+        {/* SIGNALEMENTS TAB */}
+        {activeTab === "signalements" && <AdminSignalementsTab />}
+
+        {/* ALERTES TAB */}
+        {activeTab === "alertes" && <AdminAlertesTab />}
       </main>
+    </div>
+  );
+}
+
+// ======================== ADMIN SUB-TABS ========================
+
+function AdminDocumentsTab() {
+  const [search, setSearch] = useState("");
+  const { data, isLoading } = trpc.admin.getDocuments.useQuery({
+    search: search || undefined,
+  });
+  const utils = trpc.useUtils();
+  const deleteMut = trpc.admin.deleteDocument.useMutation({
+    onSuccess: () => utils.admin.getDocuments.invalidate(),
+  });
+  const toggleMut = trpc.admin.updateDocument.useMutation({
+    onSuccess: () => utils.admin.getDocuments.invalidate(),
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <ScrollText className="w-5 h-5 text-primary" />
+          Documents référence ({data?.total || 0})
+        </h3>
+      </div>
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Rechercher un document..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-gray-50">
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Nom
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Catégorie
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Prix
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Délai
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Actif
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.items.map((doc) => (
+                <tr
+                  key={doc.id}
+                  className="border-b border-border hover:bg-gray-50"
+                >
+                  <td className="py-3 px-4">
+                    <p className="font-medium text-foreground">{doc.nom}</p>
+                    <p className="text-xs text-muted-foreground">{doc.slug}</p>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                      {doc.categorie}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-xs">
+                    {doc.prixEstimatif ? String(doc.prixEstimatif) : "—"}
+                  </td>
+                  <td className="py-3 px-4 text-xs">
+                    {doc.delaiEstimatif ? String(doc.delaiEstimatif) : "—"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() =>
+                        toggleMut.mutate({ id: doc.id, actif: !doc.actif })
+                      }
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      {doc.actif ? (
+                        <ToggleRight className="w-5 h-5 text-emerald-500" />
+                      ) : (
+                        <ToggleLeft className="w-5 h-5" />
+                      )}
+                    </button>
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => {
+                        if (confirm("Supprimer ce document ?"))
+                          deleteMut.mutate({ id: doc.id });
+                      }}
+                      className="p-1.5 hover:bg-red-50 rounded-lg"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(!data?.items || data.items.length === 0) && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Aucun document trouvé
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminServicesTab() {
+  const [search, setSearch] = useState("");
+  const { data, isLoading } = trpc.admin.getServices.useQuery({
+    search: search || undefined,
+  });
+  const utils = trpc.useUtils();
+  const deleteMut = trpc.admin.deleteService.useMutation({
+    onSuccess: () => utils.admin.getServices.invalidate(),
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <FileText className="w-5 h-5 text-primary" />
+          Services ({data?.total || 0})
+        </h3>
+      </div>
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Rechercher un service..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-gray-50">
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Nom du service
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Lieu
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Catégorie
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Prix
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.items.map((svc) => (
+                <tr
+                  key={svc.id}
+                  className="border-b border-border hover:bg-gray-50"
+                >
+                  <td className="py-3 px-4 font-medium text-foreground">
+                    {svc.nomService}
+                  </td>
+                  <td className="py-3 px-4 text-xs text-muted-foreground">
+                    {svc.lieu?.nom || "—"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                      {svc.categorie}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-xs">
+                    {svc.prixOfficiel
+                      ? `${Number(svc.prixOfficiel).toLocaleString()} ${svc.devise}`
+                      : "—"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => {
+                        if (confirm("Supprimer ce service ?"))
+                          deleteMut.mutate({ id: svc.id });
+                      }}
+                      className="p-1.5 hover:bg-red-50 rounded-lg"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(!data?.items || data.items.length === 0) && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Aucun service trouvé
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminCommunesTab() {
+  const { data: communes, isLoading } = trpc.admin.getCommunes.useQuery({});
+  const { data: districts } = trpc.admin.getDistricts.useQuery();
+  const utils = trpc.useUtils();
+  const deleteMut = trpc.admin.deleteCommune.useMutation({
+    onSuccess: () => utils.admin.getCommunes.invalidate(),
+  });
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+        <Building2 className="w-5 h-5 text-primary" />
+        Communes ({communes?.total || 0}) & Districts ({districts?.length || 0})
+      </h3>
+
+      {/* Districts overview */}
+      {districts && districts.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {districts.map((d) => (
+            <div
+              key={d.id}
+              className="bg-white rounded-xl border border-border p-4"
+            >
+              <h4 className="font-bold text-foreground">{d.name}</h4>
+              <p className="text-sm text-muted-foreground">
+                {d._count.communes} communes
+              </p>
+              {d.description && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {d.description}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-gray-50">
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Commune
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  District
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Bourgmestre
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Population
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {communes?.items.map((c: any) => (
+                <tr
+                  key={c.id}
+                  className="border-b border-border hover:bg-gray-50"
+                >
+                  <td className="py-3 px-4 font-medium text-foreground">
+                    {c.name}
+                  </td>
+                  <td className="py-3 px-4 text-xs">
+                    {c.district?.name || "—"}
+                  </td>
+                  <td className="py-3 px-4 text-xs">{c.bourgmestre || "—"}</td>
+                  <td className="py-3 px-4 text-xs">
+                    {c.population ? Number(c.population).toLocaleString() : "—"}
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => {
+                        if (confirm("Supprimer cette commune ?"))
+                          deleteMut.mutate({ id: c.id });
+                      }}
+                      className="p-1.5 hover:bg-red-50 rounded-lg"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {(!communes?.items || communes.items.length === 0) && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Aucune commune trouvée
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminSignalementsTab() {
+  const [statutFilter, setStatutFilter] = useState("");
+  const { data, isLoading } = trpc.admin.getSignalements.useQuery({
+    statut: statutFilter || undefined,
+  });
+  const utils = trpc.useUtils();
+  const updateMut = trpc.admin.updateSignalement.useMutation({
+    onSuccess: () => utils.admin.getSignalements.invalidate(),
+  });
+  const deleteMut = trpc.admin.deleteSignalement.useMutation({
+    onSuccess: () => utils.admin.getSignalements.invalidate(),
+  });
+
+  const STATUTS = ["", "EN_ATTENTE", "EN_COURS", "RESOLU", "REJETE"];
+  const STATUT_LABELS: Record<string, string> = {
+    EN_ATTENTE: "En attente",
+    EN_COURS: "En cours",
+    RESOLU: "Résolu",
+    REJETE: "Rejeté",
+  };
+  const STATUT_COLORS: Record<string, string> = {
+    EN_ATTENTE: "bg-yellow-50 text-yellow-700",
+    EN_COURS: "bg-blue-50 text-blue-700",
+    RESOLU: "bg-emerald-50 text-emerald-700",
+    REJETE: "bg-red-50 text-red-700",
+  };
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+        <AlertTriangle className="w-5 h-5 text-yellow-500" />
+        Signalements ({data?.total || 0})
+      </h3>
+
+      <div className="flex gap-2">
+        {STATUTS.map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatutFilter(s)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+              statutFilter === s
+                ? "bg-primary text-white"
+                : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
+            }`}
+          >
+            {s === "" ? "Tous" : STATUT_LABELS[s] || s}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {data?.items.map((sig: any) => (
+            <div
+              key={sig.id}
+              className="bg-white rounded-xl border border-border p-5"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${STATUT_COLORS[sig.statut] || "bg-gray-100 text-gray-600"}`}
+                    >
+                      {STATUT_LABELS[sig.statut] || sig.statut}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(sig.createdAt).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-foreground">{sig.type}</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {sig.description}
+                  </p>
+                  {sig.lieu && (
+                    <p className="text-xs text-primary mt-1">
+                      Lieu: {sig.lieu.nom}
+                    </p>
+                  )}
+                  {sig.email && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Par: {sig.email}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {!sig.traite && (
+                    <button
+                      onClick={() =>
+                        updateMut.mutate({ id: sig.id, statut: "RESOLU" })
+                      }
+                      className="p-1.5 hover:bg-emerald-50 rounded-lg text-xs text-emerald-600 font-medium"
+                      title="Marquer résolu"
+                    >
+                      Résoudre
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (confirm("Supprimer ce signalement ?"))
+                        deleteMut.mutate({ id: sig.id });
+                    }}
+                    className="p-1.5 hover:bg-red-50 rounded-lg"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {(!data?.items || data.items.length === 0) && (
+            <div className="text-center py-10 bg-white rounded-xl border border-border">
+              <AlertTriangle className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Aucun signalement</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminAlertesTab() {
+  const { data, isLoading } = trpc.admin.getAlertes.useQuery({});
+  const utils = trpc.useUtils();
+  const deleteMut = trpc.admin.deleteAlerte.useMutation({
+    onSuccess: () => utils.admin.getAlertes.invalidate(),
+  });
+  const toggleMut = trpc.admin.updateAlerte.useMutation({
+    onSuccess: () => utils.admin.getAlertes.invalidate(),
+  });
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ titre: "", message: "", type: "INFO" });
+  const createMut = trpc.admin.createAlerte.useMutation({
+    onSuccess: () => {
+      utils.admin.getAlertes.invalidate();
+      setShowAdd(false);
+      setForm({ titre: "", message: "", type: "INFO" });
+    },
+  });
+
+  const TYPE_COLORS: Record<string, string> = {
+    INFO: "bg-blue-50 text-blue-700",
+    AVERTISSEMENT: "bg-amber-50 text-amber-700",
+    URGENT: "bg-red-50 text-red-700",
+    SUCCES: "bg-emerald-50 text-emerald-700",
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <Bell className="w-5 h-5 text-red-500" />
+          Alertes ({data?.total || 0})
+        </h3>
+        <button
+          onClick={() => setShowAdd(!showAdd)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" />
+          Nouvelle alerte
+        </button>
+      </div>
+
+      {showAdd && (
+        <div className="bg-white rounded-xl border border-border p-5 space-y-4">
+          <input
+            type="text"
+            placeholder="Titre de l'alerte"
+            value={form.titre}
+            onChange={(e) => setForm({ ...form, titre: e.target.value })}
+            className="w-full px-4 py-2.5 rounded-xl border border-border text-sm"
+          />
+          <textarea
+            placeholder="Message de l'alerte"
+            value={form.message}
+            onChange={(e) => setForm({ ...form, message: e.target.value })}
+            className="w-full px-4 py-2.5 rounded-xl border border-border text-sm h-24 resize-none"
+          />
+          <div className="flex gap-2">
+            {["INFO", "AVERTISSEMENT", "URGENT", "SUCCES"].map((t) => (
+              <button
+                key={t}
+                onClick={() => setForm({ ...form, type: t })}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                  form.type === t
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-muted-foreground"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setShowAdd(false)}
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => createMut.mutate(form)}
+              disabled={!form.titre || !form.message}
+              className="px-4 py-2 bg-primary text-white rounded-xl text-sm disabled:opacity-50"
+            >
+              Publier l&apos;alerte
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {data?.items.map((alerte: any) => (
+            <div
+              key={alerte.id}
+              className="bg-white rounded-xl border border-border p-5"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${TYPE_COLORS[alerte.type] || "bg-gray-100 text-gray-600"}`}
+                    >
+                      {alerte.type}
+                    </span>
+                    {alerte.active ? (
+                      <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                        Inactive
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(alerte.createdAt).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-foreground">
+                    {alerte.titre}
+                  </h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {alerte.message}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() =>
+                      toggleMut.mutate({
+                        id: alerte.id,
+                        active: !alerte.active,
+                      })
+                    }
+                    className="p-1.5 hover:bg-gray-100 rounded-lg"
+                    title={alerte.active ? "Désactiver" : "Activer"}
+                  >
+                    {alerte.active ? (
+                      <ToggleRight className="w-5 h-5 text-emerald-500" />
+                    ) : (
+                      <ToggleLeft className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm("Supprimer cette alerte ?"))
+                        deleteMut.mutate({ id: alerte.id });
+                    }}
+                    className="p-1.5 hover:bg-red-50 rounded-lg"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {(!data?.items || data.items.length === 0) && (
+            <div className="text-center py-10 bg-white rounded-xl border border-border">
+              <Bell className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Aucune alerte</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

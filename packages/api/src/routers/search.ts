@@ -5,6 +5,15 @@ import { router, publicProcedure } from "../trpc";
 const lieuTypeEnum = z.nativeEnum(LieuType);
 const serviceCategorieEnum = z.nativeEnum(ServiceCategorie);
 
+// Normalize text: remove accents, lowercase for accent-insensitive search
+function normalize(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export const searchRouter = router({
   // Global search across all entities
   global: publicProcedure
@@ -15,63 +24,97 @@ export const searchRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const queryLower = input.query.toLowerCase();
+      const normalizedQuery = normalize(input.query);
 
       // Search in parallel
-      const [communes, lieux, services, zonesSante] = await Promise.all([
-        // Search communes
-        ctx.prisma.commune.findMany({
-          where: {
-            name: { contains: input.query, mode: "insensitive" },
-          },
-          take: input.limit,
-        }),
+      const [communes, lieux, services, zonesSante, documents] =
+        await Promise.all([
+          // Search communes
+          ctx.prisma.commune.findMany({
+            where: {
+              name: { contains: input.query, mode: "insensitive" },
+            },
+            take: input.limit,
+          }),
 
-        // Search lieux
-        ctx.prisma.lieu.findMany({
-          where: {
-            verified: true,
-            OR: [
-              { nom: { contains: input.query, mode: "insensitive" } },
-              { adresse: { contains: input.query, mode: "insensitive" } },
-            ],
-          },
-          include: {
-            commune: { select: { name: true } },
-          },
-          take: input.limit,
-        }),
+          // Search lieux
+          ctx.prisma.lieu.findMany({
+            where: {
+              verified: true,
+              OR: [
+                { nom: { contains: input.query, mode: "insensitive" } },
+                { adresse: { contains: input.query, mode: "insensitive" } },
+              ],
+            },
+            include: {
+              commune: { select: { name: true } },
+            },
+            take: input.limit,
+          }),
 
-        // Search services
-        ctx.prisma.servicePropose.findMany({
-          where: {
-            actif: true,
-            lieu: { verified: true },
-            OR: [
-              { nomService: { contains: input.query, mode: "insensitive" } },
-              { description: { contains: input.query, mode: "insensitive" } },
-            ],
-          },
-          include: {
-            lieu: {
-              select: {
-                id: true,
-                nom: true,
-                commune: { select: { name: true } },
+          // Search services
+          ctx.prisma.servicePropose.findMany({
+            where: {
+              actif: true,
+              lieu: { verified: true },
+              OR: [
+                { nomService: { contains: input.query, mode: "insensitive" } },
+                { description: { contains: input.query, mode: "insensitive" } },
+              ],
+            },
+            include: {
+              lieu: {
+                select: {
+                  id: true,
+                  nom: true,
+                  commune: { select: { name: true } },
+                },
               },
             },
-          },
-          take: input.limit,
-        }),
+            take: input.limit,
+          }),
 
-        // Search zones de santé
-        ctx.prisma.zoneSante.findMany({
-          where: {
-            name: { contains: input.query, mode: "insensitive" },
-          },
-          take: input.limit,
-        }),
-      ]);
+          // Search zones de santé
+          ctx.prisma.zoneSante.findMany({
+            where: {
+              name: { contains: input.query, mode: "insensitive" },
+            },
+            take: input.limit,
+          }),
+
+          // Search documents (accent-insensitive via aliases)
+          ctx.prisma.document.findMany({
+            where: {
+              actif: true,
+              OR: [
+                { nom: { contains: input.query, mode: "insensitive" } },
+                { description: { contains: input.query, mode: "insensitive" } },
+                { aliases: { has: normalizedQuery } },
+              ],
+            },
+            take: input.limit,
+          }),
+        ]);
+
+      // Fallback: if no documents found, do accent-insensitive full scan
+      let finalDocuments = documents;
+      if (documents.length === 0 && normalizedQuery.length >= 2) {
+        const allDocs = await ctx.prisma.document.findMany({
+          where: { actif: true },
+        });
+        finalDocuments = allDocs
+          .filter((doc) => {
+            const normalizedName = normalize(doc.nom);
+            const normalizedDesc = normalize(doc.description || "");
+            const normalizedAliases = doc.aliases.map(normalize);
+            return (
+              normalizedName.includes(normalizedQuery) ||
+              normalizedDesc.includes(normalizedQuery) ||
+              normalizedAliases.some((a) => a.includes(normalizedQuery))
+            );
+          })
+          .slice(0, input.limit);
+      }
 
       return {
         communes: communes.map((c) => ({
@@ -100,6 +143,14 @@ export const searchRouter = router({
           type: "zone_sante" as const,
           id: z.id,
           name: z.name,
+        })),
+        documents: finalDocuments.map((d) => ({
+          type: "document" as const,
+          id: d.id,
+          name: d.nom,
+          slug: d.slug,
+          categorie: d.categorie,
+          description: d.description,
         })),
       };
     }),
@@ -154,6 +205,26 @@ export const searchRouter = router({
       communes.forEach((c) =>
         suggestions.push({ text: c.name, type: "commune", id: c.id }),
       );
+
+      // Get document names (accent-insensitive)
+      const normalizedQ = normalize(input.query);
+      const allDocs = await ctx.prisma.document.findMany({
+        where: { actif: true },
+        select: { id: true, nom: true, slug: true, aliases: true },
+      });
+      const matchedDocs = allDocs.filter((doc) => {
+        const normalizedName = normalize(doc.nom);
+        const normalizedAliases = doc.aliases.map(normalize);
+        return (
+          normalizedName.includes(normalizedQ) ||
+          normalizedAliases.some((a) => a.includes(normalizedQ))
+        );
+      });
+      matchedDocs
+        .slice(0, input.limit)
+        .forEach((d) =>
+          suggestions.push({ text: d.nom, type: "document", id: d.id }),
+        );
 
       return suggestions.slice(0, input.limit);
     }),

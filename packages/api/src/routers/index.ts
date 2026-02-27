@@ -12,6 +12,7 @@ import { searchRouter } from "./search";
 import { villeRouter } from "./ville";
 import { authRouter } from "./auth";
 import { adminRouter } from "./admin";
+import { documentRouter } from "./documents";
 
 export const appRouter = router({
   communes: communeRouter,
@@ -27,6 +28,7 @@ export const appRouter = router({
   ville: villeRouter,
   auth: authRouter,
   admin: adminRouter,
+  documents: documentRouter,
 });
 
 export type AppRouter = typeof appRouter;
