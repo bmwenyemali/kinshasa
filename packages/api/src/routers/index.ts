@@ -13,6 +13,9 @@ import { villeRouter } from "./ville";
 import { authRouter } from "./auth";
 import { adminRouter } from "./admin";
 import { documentRouter } from "./documents";
+import { faqRouter } from "./faq";
+import { statsRouter } from "./stats";
+import { prixRouter } from "./prix";
 
 export const appRouter = router({
   communes: communeRouter,
@@ -29,6 +32,9 @@ export const appRouter = router({
   auth: authRouter,
   admin: adminRouter,
   documents: documentRouter,
+  faq: faqRouter,
+  stats: statsRouter,
+  prix: prixRouter,
 });
 
 export type AppRouter = typeof appRouter;

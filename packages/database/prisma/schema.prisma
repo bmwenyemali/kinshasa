@@ -456,3 +456,45 @@ model Alerte {
   @@index([communeId])
   @@map("alertes")
 }
+
+// ============================================
+// FAQ TABLE
+// ============================================
+
+model Faq {
+  id        String            @id @default(uuid())
+  question  String            @db.Text
+  reponse   String            @db.Text
+  categorie ServiceCategorie?
+  ordre     Int               @default(0)
+  actif     Boolean           @default(true)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  @@index([categorie])
+  @@map("faqs")
+}
+
+// ============================================
+// PRIX SIGNALÉ (Comparateur)
+// ============================================
+
+model PrixSignale {
+  id          String   @id @default(uuid())
+  serviceNom  String   @map("service_nom") @db.VarChar(300)
+  documentSlug String? @map("document_slug") @db.VarChar(300)
+  categorie   ServiceCategorie?
+  prixPaye    Decimal  @map("prix_paye") @db.Decimal(12, 2)
+  devise      String   @default("FC") @db.VarChar(10)
+  lieuNom     String?  @map("lieu_nom") @db.VarChar(300)
+  communeNom  String?  @map("commune_nom") @db.VarChar(100)
+  commentaire String?  @db.Text
+  userId      String?  @map("user_id")
+  verifie     Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([serviceNom])
+  @@index([documentSlug])
+  @@index([categorie])
+  @@map("prix_signales")
+}

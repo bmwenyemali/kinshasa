@@ -1,0 +1,20 @@
+{
+  "name": "Kin Services — Guide des Services Publics de Kinshasa",
+  "short_name": "Kin Services",
+  "description": "Trouvez les services publics à Kinshasa : prix officiels, documents requis, procédures détaillées et itinéraires.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0077BE",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": ["government", "utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

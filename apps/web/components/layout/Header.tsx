@@ -58,6 +58,7 @@ export function Header() {
     { href: "/", label: "Accueil", icon: Home },
     { href: "/communes", label: "Communes", icon: Building2 },
     { href: "/services", label: "Services", icon: FileText },
+    { href: "/simulateur", label: "Simulateur", icon: FileText },
     { href: "/carte", label: "Carte", icon: Map },
     { href: "/gestion-ville", label: "La Ville", icon: Landmark },
   ];
@@ -267,6 +268,27 @@ export function Footer() {
               <li>
                 <Link href="/recherche" className="hover:text-white transition">
                   Recherche
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/simulateur"
+                  className="hover:text-white transition"
+                >
+                  Simulateur
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className="hover:text-white transition">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/statistiques"
+                  className="hover:text-white transition"
+                >
+                  Statistiques
                 </Link>
               </li>
             </ul>
