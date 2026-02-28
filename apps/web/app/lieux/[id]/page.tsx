@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -22,6 +22,8 @@ import {
   DollarSign,
   Timer,
   CheckCircle,
+  X,
+  Send,
 } from "lucide-react";
 import { Header, Footer } from "@/components/layout/Header";
 import { trpc, type LieuService, type LieuAvis } from "@/lib/trpc";
@@ -32,6 +34,229 @@ import {
   SERVICE_CATEGORIE_ICONS,
   formatPrice,
 } from "@kinservices/ui";
+
+// MapBox Map component
+function LieuMap({
+  latitude,
+  longitude,
+  nom,
+}: {
+  latitude: number;
+  longitude: number;
+  nom: string;
+}) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!mapContainer.current || mapRef.current) return;
+
+    const initMap = async () => {
+      const mapboxgl = (await import("mapbox-gl")).default;
+
+      // Load mapbox CSS via link tag
+      if (!document.getElementById("mapbox-css")) {
+        const link = document.createElement("link");
+        link.id = "mapbox-css";
+        link.rel = "stylesheet";
+        link.href = "https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css";
+        document.head.appendChild(link);
+      }
+
+      mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+
+      const map = new mapboxgl.Map({
+        container: mapContainer.current!,
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [longitude, latitude],
+        zoom: 15,
+        attributionControl: false,
+      });
+
+      map.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+      new mapboxgl.Marker({ color: "#0066cc" })
+        .setLngLat([longitude, latitude])
+        .setPopup(new mapboxgl.Popup().setHTML(`<strong>${nom}</strong>`))
+        .addTo(map);
+
+      mapRef.current = map;
+    };
+
+    initMap();
+
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, [latitude, longitude, nom]);
+
+  return <div ref={mapContainer} className="w-full h-full" />;
+}
+
+// Signaler Modal component
+function SignalerModal({
+  lieuId,
+  lieuNom,
+  onClose,
+}: {
+  lieuId: string;
+  lieuNom: string;
+  onClose: () => void;
+}) {
+  const [type, setType] = useState("INFO_ERRONNEE");
+  const [description, setDescription] = useState("");
+  const [email, setEmail] = useState("");
+  const [success, setSuccess] = useState(false);
+
+  const createSignalement = trpc.signalements.create.useMutation({
+    onSuccess: () => setSuccess(true),
+    onError: (e) => alert("Erreur: " + e.message),
+  });
+
+  const TYPES = [
+    { value: "INFO_ERRONNEE", label: "Information erronée" },
+    { value: "CORRUPTION", label: "Corruption signalée" },
+    { value: "FERME", label: "Lieu fermé" },
+    { value: "PRIX_INCORRECT", label: "Prix incorrect" },
+    { value: "AUTRE", label: "Autre" },
+  ];
+
+  if (success) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+        onClick={onClose}
+      >
+        <div
+          className="bg-white rounded-2xl p-8 max-w-md w-full text-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-foreground mb-2">
+            Merci pour votre signalement
+          </h3>
+          <p className="text-muted-foreground text-sm mb-6">
+            Votre signalement concernant &quot;{lieuNom}&quot; a été enregistré.
+            Notre équipe le traitera dans les plus brefs délais.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90"
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            Signaler un problème
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-gray-100 rounded-lg"
+          >
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-4">
+          Signaler un problème avec <strong>{lieuNom}</strong>
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Type de signalement *
+            </label>
+            <div className="grid grid-cols-1 gap-2">
+              {TYPES.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => setType(t.value)}
+                  className={`text-left px-4 py-2.5 rounded-xl border text-sm transition-all ${
+                    type === t.value
+                      ? "border-primary bg-primary/5 text-primary font-medium"
+                      : "border-border text-muted-foreground hover:border-primary/30"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Description *
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Décrivez le problème en détail..."
+              className="w-full px-4 py-3 rounded-xl border border-border text-sm h-28 resize-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Votre email (optionnel)
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="exemple@email.com"
+              className="w-full px-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Pour être informé du traitement de votre signalement
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-gray-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={() => {
+              if (!description.trim())
+                return alert("Veuillez décrire le problème");
+              createSignalement.mutate({
+                lieuId,
+                type: type as any,
+                description,
+                email: email || undefined,
+              });
+            }}
+            disabled={createSignalement.isPending || !description.trim()}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Send className="w-4 h-4" />
+            {createSignalement.isPending ? "Envoi..." : "Envoyer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LieuDetailPage() {
   const params = useParams();
@@ -488,14 +713,15 @@ export default function LieuDetailPage() {
 
               {/* Sidebar */}
               <div className="space-y-6">
-                {/* Map placeholder */}
+                {/* Map */}
                 {lieu.latitude && lieu.longitude && (
                   <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
-                    <div className="h-48 bg-muted flex items-center justify-center">
-                      <div className="text-center text-muted-foreground">
-                        <MapPin className="w-8 h-8 mx-auto mb-2 text-primary" />
-                        <p className="text-sm">Carte</p>
-                      </div>
+                    <div className="h-64">
+                      <LieuMap
+                        latitude={Number(lieu.latitude)}
+                        longitude={Number(lieu.longitude)}
+                        nom={lieu.nom}
+                      />
                     </div>
                     <div className="p-4">
                       <Button
@@ -550,6 +776,15 @@ export default function LieuDetailPage() {
           </div>
         </section>
       </main>
+
+      {/* Signaler Modal */}
+      {showReportModal && (
+        <SignalerModal
+          lieuId={lieuId}
+          lieuNom={lieu.nom}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
 
       <Footer />
     </div>

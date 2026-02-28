@@ -290,9 +290,11 @@ export const adminRouter = router({
         gouvernoratId: z.string().uuid(),
         nom: z.string(),
         portefeuille: z.string(),
+        type: z.string().default("MINISTRE"),
         photoUrl: z.string().optional(),
         telephone: z.string().optional(),
         email: z.string().optional(),
+        biographie: z.string().optional(),
         ordre: z.number().default(0),
       }),
     )
@@ -307,9 +309,11 @@ export const adminRouter = router({
         id: z.string().uuid(),
         nom: z.string().optional(),
         portefeuille: z.string().optional(),
+        type: z.string().optional(),
         photoUrl: z.string().optional(),
         telephone: z.string().optional(),
         email: z.string().optional(),
+        biographie: z.string().optional(),
         ordre: z.number().optional(),
       }),
     )
@@ -335,6 +339,7 @@ export const adminRouter = router({
         photoUrl: z.string().optional(),
         telephone: z.string().optional(),
         email: z.string().optional(),
+        biographie: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -352,6 +357,7 @@ export const adminRouter = router({
         photoUrl: z.string().optional(),
         telephone: z.string().optional(),
         email: z.string().optional(),
+        biographie: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -366,7 +372,90 @@ export const adminRouter = router({
       return ctx.prisma.depute.delete({ where: { id: input.id } });
     }),
 
+  // CRUD for gouverneurs historiques
+  getGouverneursHistoriques: publicProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.gouverneurHistorique.findMany({
+      orderBy: { ordre: "asc" },
+    });
+  }),
+
+  createGouverneurHistorique: publicProcedure
+    .input(
+      z.object({
+        nom: z.string(),
+        photoUrl: z.string().optional(),
+        dateDebut: z.string().optional(),
+        dateFin: z.string().optional(),
+        biographie: z.string().optional(),
+        ordre: z.number().default(0),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.gouverneurHistorique.create({ data: input });
+    }),
+
+  updateGouverneurHistorique: publicProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        nom: z.string().optional(),
+        photoUrl: z.string().optional(),
+        dateDebut: z.string().optional(),
+        dateFin: z.string().optional(),
+        biographie: z.string().optional(),
+        ordre: z.number().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return ctx.prisma.gouverneurHistorique.update({
+        where: { id },
+        data: data as any,
+      });
+    }),
+
+  deleteGouverneurHistorique: publicProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.gouverneurHistorique.delete({
+        where: { id: input.id },
+      });
+    }),
+
   // CRUD for projets
+  getProjets: publicProcedure
+    .input(
+      z
+        .object({
+          search: z.string().optional(),
+          statut: z.string().optional(),
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const where: any = {};
+      if (input?.search) {
+        where.OR = [
+          { titre: { contains: input.search, mode: "insensitive" } },
+          { description: { contains: input.search, mode: "insensitive" } },
+          { localisation: { contains: input.search, mode: "insensitive" } },
+        ];
+      }
+      if (input?.statut) where.statut = input.statut;
+      const [items, total] = await Promise.all([
+        ctx.prisma.projet.findMany({
+          where,
+          take: input?.limit ?? 50,
+          skip: input?.offset ?? 0,
+          orderBy: { createdAt: "desc" },
+        }),
+        ctx.prisma.projet.count({ where }),
+      ]);
+      return { items, total };
+    }),
+
   createProjet: publicProcedure
     .input(
       z.object({
@@ -400,12 +489,28 @@ export const adminRouter = router({
         description: z.string().optional(),
         statut: z.string().optional(),
         budget: z.number().optional(),
+        devise: z.string().optional(),
+        dateDebut: z.string().optional(),
+        dateFin: z.string().optional(),
         localisation: z.string().optional(),
+        maitreDoeuvre: z.string().optional(),
+        categorie: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
-      return ctx.prisma.projet.update({ where: { id }, data: data as any });
+      const { id, dateDebut, dateFin, ...rest } = input;
+      return ctx.prisma.projet.update({
+        where: { id },
+        data: {
+          ...rest,
+          ...(dateDebut !== undefined
+            ? { dateDebut: dateDebut ? new Date(dateDebut) : null }
+            : {}),
+          ...(dateFin !== undefined
+            ? { dateFin: dateFin ? new Date(dateFin) : null }
+            : {}),
+        } as any,
+      });
     }),
 
   deleteProjet: publicProcedure
@@ -700,7 +805,8 @@ export const adminRouter = router({
     .input(
       z
         .object({
-          statut: z.string().optional(),
+          traite: z.boolean().optional(),
+          type: z.string().optional(),
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().min(0).default(0),
         })
@@ -708,7 +814,8 @@ export const adminRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const where: any = {};
-      if (input?.statut) where.statut = input.statut;
+      if (input?.traite !== undefined) where.traite = input.traite;
+      if (input?.type) where.type = input.type;
       const [items, total] = await Promise.all([
         ctx.prisma.signalement.findMany({
           where,
@@ -728,15 +835,14 @@ export const adminRouter = router({
     .input(
       z.object({
         id: z.string().uuid(),
-        statut: z.string().optional(),
-        reponseAdmin: z.string().optional(),
+        traite: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
       return ctx.prisma.signalement.update({
         where: { id },
-        data: data as any,
+        data,
       });
     }),
 
@@ -775,18 +881,22 @@ export const adminRouter = router({
         message: z.string().min(1),
         type: z.string().default("INFO"),
         communeId: z.string().uuid().optional(),
-        active: z.boolean().default(true),
-        dateExpiration: z.string().optional(),
+        actif: z.boolean().default(true),
+        dateDebut: z.string().optional(),
+        dateFin: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.prisma.alerte.create({
         data: {
-          ...input,
-          dateExpiration: input.dateExpiration
-            ? new Date(input.dateExpiration)
-            : null,
-        } as any,
+          titre: input.titre,
+          message: input.message,
+          type: input.type,
+          communeId: input.communeId,
+          actif: input.actif,
+          dateDebut: input.dateDebut ? new Date(input.dateDebut) : new Date(),
+          dateFin: input.dateFin ? new Date(input.dateFin) : null,
+        },
       });
     }),
 
@@ -797,24 +907,24 @@ export const adminRouter = router({
         titre: z.string().optional(),
         message: z.string().optional(),
         type: z.string().optional(),
-        active: z.boolean().optional(),
-        dateExpiration: z.string().optional(),
+        actif: z.boolean().optional(),
+        dateDebut: z.string().optional(),
+        dateFin: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, dateExpiration, ...rest } = input;
+      const { id, dateDebut, dateFin, ...rest } = input;
       return ctx.prisma.alerte.update({
         where: { id },
         data: {
           ...rest,
-          ...(dateExpiration !== undefined
-            ? {
-                dateExpiration: dateExpiration
-                  ? new Date(dateExpiration)
-                  : null,
-              }
+          ...(dateDebut !== undefined
+            ? { dateDebut: dateDebut ? new Date(dateDebut) : new Date() }
             : {}),
-        } as any,
+          ...(dateFin !== undefined
+            ? { dateFin: dateFin ? new Date(dateFin) : null }
+            : {}),
+        },
       });
     }),
 

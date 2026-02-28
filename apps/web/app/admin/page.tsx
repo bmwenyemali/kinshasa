@@ -63,8 +63,48 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Auth protection: require ADMINISTRATEUR role
+  React.useEffect(() => {
+    const stored = localStorage.getItem("kinservices_user");
+    if (!stored) {
+      window.location.href = "/auth/login";
+      return;
+    }
+    try {
+      const user = JSON.parse(stored);
+      if (user.role !== "ADMINISTRATEUR") {
+        window.location.href = "/";
+        return;
+      }
+      setIsAuthorized(true);
+    } catch {
+      window.location.href = "/auth/login";
+      return;
+    }
+    setAuthChecked(true);
+  }, []);
+
+  // Show nothing while checking auth
+  if (!authChecked || !isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm">
+            Vérification des accès...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Ville management state
+  const [villeSubTab, setVilleSubTab] = useState<
+    "gouvernorat" | "ministres" | "commissaires" | "assemblee" | "historique"
+  >("gouvernorat");
   const [editingGouv, setEditingGouv] = useState(false);
   const [gouvForm, setGouvForm] = useState({
     gouverneur: "",
@@ -81,9 +121,11 @@ export default function AdminPage() {
   const [ministreForm, setMinistreForm] = useState({
     nom: "",
     portefeuille: "",
+    type: "MINISTRE",
     photoUrl: "",
     telephone: "",
     email: "",
+    biographie: "",
     ordre: 0,
   });
   const [showAddMinistre, setShowAddMinistre] = useState(false);
@@ -95,8 +137,21 @@ export default function AdminPage() {
     photoUrl: "",
     telephone: "",
     email: "",
+    biographie: "",
   });
   const [showAddDepute, setShowAddDepute] = useState(false);
+  const [showAddGouverneurHist, setShowAddGouverneurHist] = useState(false);
+  const [editingGouvHistId, setEditingGouvHistId] = useState<string | null>(
+    null,
+  );
+  const [gouvHistForm, setGouvHistForm] = useState({
+    nom: "",
+    photoUrl: "",
+    dateDebut: "",
+    dateFin: "",
+    biographie: "",
+    ordre: 0,
+  });
 
   const { data: stats, isLoading: loadingStats } =
     trpc.admin.getStats.useQuery();
@@ -144,9 +199,11 @@ export default function AdminPage() {
       setMinistreForm({
         nom: "",
         portefeuille: "",
+        type: "MINISTRE",
         photoUrl: "",
         telephone: "",
         email: "",
+        biographie: "",
         ordre: 0,
       });
     },
@@ -174,6 +231,7 @@ export default function AdminPage() {
         photoUrl: "",
         telephone: "",
         email: "",
+        biographie: "",
       });
     },
     onError: (e) => alert("Erreur: " + e.message),
@@ -182,6 +240,39 @@ export default function AdminPage() {
     onSuccess: () => utils.ville.getDeputes.invalidate(),
     onError: (e) => alert("Erreur: " + e.message),
   });
+
+  // Gouverneurs historiques
+  const { data: gouverneursHist, isLoading: loadingGouvHist } =
+    trpc.admin.getGouverneursHistoriques.useQuery();
+  const createGouvHistMutation =
+    trpc.admin.createGouverneurHistorique.useMutation({
+      onSuccess: () => {
+        utils.admin.getGouverneursHistoriques.invalidate();
+        setShowAddGouverneurHist(false);
+        setGouvHistForm({
+          nom: "",
+          photoUrl: "",
+          dateDebut: "",
+          dateFin: "",
+          biographie: "",
+          ordre: 0,
+        });
+      },
+      onError: (e) => alert("Erreur: " + e.message),
+    });
+  const updateGouvHistMutation =
+    trpc.admin.updateGouverneurHistorique.useMutation({
+      onSuccess: () => {
+        utils.admin.getGouverneursHistoriques.invalidate();
+        setEditingGouvHistId(null);
+      },
+      onError: (e) => alert("Erreur: " + e.message),
+    });
+  const deleteGouvHistMutation =
+    trpc.admin.deleteGouverneurHistorique.useMutation({
+      onSuccess: () => utils.admin.getGouverneursHistoriques.invalidate(),
+      onError: (e) => alert("Erreur: " + e.message),
+    });
 
   const tabs = [
     { id: "dashboard" as Tab, label: "Tableau de bord", icon: BarChart3 },
@@ -604,811 +695,1649 @@ export default function AdminPage() {
 
         {/* VILLE TAB */}
         {activeTab === "ville" && (
-          <div className="space-y-8">
-            {/* GOUVERNORAT SECTION */}
-            <div className="bg-white rounded-xl border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-primary" />
-                  Gouvernorat
-                </h3>
-                {gouvernorat && !editingGouv && (
-                  <button
-                    onClick={() => {
-                      setGouvForm({
-                        gouverneur: gouvernorat.gouverneur || "",
-                        photoUrl: gouvernorat.photoUrl || "",
-                        adresse: gouvernorat.adresse || "",
-                        telephone: gouvernorat.telephone || "",
-                        email: gouvernorat.email || "",
-                        siteWeb: gouvernorat.siteWeb || "",
-                        description: gouvernorat.description || "",
-                      });
-                      setEditingGouv(true);
-                    }}
-                    className="flex items-center gap-1.5 text-sm text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    <Edit3 className="w-4 h-4" /> Modifier
-                  </button>
-                )}
-              </div>
+          <div className="space-y-6">
+            {/* Sub-tabs navigation */}
+            <div className="flex gap-2 flex-wrap">
+              {[
+                {
+                  id: "gouvernorat" as const,
+                  label: "Gouvernorat",
+                  icon: "🏛️",
+                },
+                {
+                  id: "ministres" as const,
+                  label: "Ministres Provinciaux",
+                  icon: "👔",
+                },
+                {
+                  id: "commissaires" as const,
+                  label: "Commissaires Généraux",
+                  icon: "⭐",
+                },
+                {
+                  id: "assemblee" as const,
+                  label: "Assemblée Provinciale",
+                  icon: "🏢",
+                },
+                {
+                  id: "historique" as const,
+                  label: "Gouverneurs Historiques",
+                  icon: "📜",
+                },
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  onClick={() => setVilleSubTab(st.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    villeSubTab === st.id
+                      ? "bg-primary text-white shadow-md"
+                      : "bg-white border border-border text-muted-foreground hover:bg-gray-50"
+                  }`}
+                >
+                  <span>{st.icon}</span> {st.label}
+                </button>
+              ))}
+            </div>
 
-              {loadingGouv ? (
-                <div className="flex justify-center py-10">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+            {/* GOUVERNORAT SUB-TAB */}
+            {villeSubTab === "gouvernorat" && (
+              <div className="bg-white rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-primary" />
+                    Gouvernorat de Kinshasa
+                  </h3>
+                  {gouvernorat && !editingGouv && (
+                    <button
+                      onClick={() => {
+                        setGouvForm({
+                          gouverneur: gouvernorat.gouverneur || "",
+                          photoUrl: gouvernorat.photoUrl || "",
+                          adresse: gouvernorat.adresse || "",
+                          telephone: gouvernorat.telephone || "",
+                          email: gouvernorat.email || "",
+                          siteWeb: gouvernorat.siteWeb || "",
+                          description: gouvernorat.description || "",
+                        });
+                        setEditingGouv(true);
+                      }}
+                      className="flex items-center gap-1.5 text-sm text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Edit3 className="w-4 h-4" /> Modifier
+                    </button>
+                  )}
                 </div>
-              ) : editingGouv ? (
-                <div className="space-y-4">
-                  <CloudinaryUpload
-                    value={gouvForm.photoUrl}
-                    onChange={(url) =>
-                      setGouvForm({ ...gouvForm, photoUrl: url })
-                    }
-                    label="Photo du Gouverneur"
-                    size="lg"
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Gouverneur
-                      </label>
-                      <input
-                        type="text"
-                        value={gouvForm.gouverneur}
-                        onChange={(e) =>
-                          setGouvForm({
-                            ...gouvForm,
-                            gouverneur: e.target.value,
+
+                {loadingGouv ? (
+                  <div className="flex justify-center py-10">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                  </div>
+                ) : editingGouv ? (
+                  <div className="space-y-4">
+                    <CloudinaryUpload
+                      value={gouvForm.photoUrl}
+                      onChange={(url) =>
+                        setGouvForm({ ...gouvForm, photoUrl: url })
+                      }
+                      label="Photo du Gouverneur"
+                      size="lg"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Gouverneur
+                        </label>
+                        <input
+                          type="text"
+                          value={gouvForm.gouverneur}
+                          onChange={(e) =>
+                            setGouvForm({
+                              ...gouvForm,
+                              gouverneur: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Téléphone
+                        </label>
+                        <input
+                          type="text"
+                          value={gouvForm.telephone}
+                          onChange={(e) =>
+                            setGouvForm({
+                              ...gouvForm,
+                              telephone: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={gouvForm.email}
+                          onChange={(e) =>
+                            setGouvForm({ ...gouvForm, email: e.target.value })
+                          }
+                          className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Site Web
+                        </label>
+                        <input
+                          type="url"
+                          value={gouvForm.siteWeb}
+                          onChange={(e) =>
+                            setGouvForm({
+                              ...gouvForm,
+                              siteWeb: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">
+                          Adresse
+                        </label>
+                        <input
+                          type="text"
+                          value={gouvForm.adresse}
+                          onChange={(e) =>
+                            setGouvForm({
+                              ...gouvForm,
+                              adresse: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          value={gouvForm.description}
+                          onChange={(e) =>
+                            setGouvForm({
+                              ...gouvForm,
+                              description: e.target.value,
+                            })
+                          }
+                          rows={3}
+                          className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          upsertGouvMutation.mutate({
+                            id: gouvernorat?.id,
+                            gouverneur: gouvForm.gouverneur,
+                            photoUrl: gouvForm.photoUrl || undefined,
+                            adresse: gouvForm.adresse || undefined,
+                            telephone: gouvForm.telephone || undefined,
+                            email: gouvForm.email || undefined,
+                            siteWeb: gouvForm.siteWeb || undefined,
+                            description: gouvForm.description || undefined,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-lg border border-border text-sm"
-                      />
+                        disabled={upsertGouvMutation.isPending}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4" />
+                        {upsertGouvMutation.isPending
+                          ? "Enregistrement..."
+                          : "Enregistrer"}
+                      </button>
+                      <button
+                        onClick={() => setEditingGouv(false)}
+                        className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                      >
+                        Annuler
+                      </button>
                     </div>
+                  </div>
+                ) : gouvernorat ? (
+                  <div className="flex items-center gap-4">
+                    {gouvernorat.photoUrl ? (
+                      <img
+                        src={gouvernorat.photoUrl}
+                        alt={gouvernorat.gouverneur}
+                        className="w-20 h-20 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
+                        {gouvernorat.gouverneur?.charAt(0) || "G"}
+                      </div>
+                    )}
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Téléphone
-                      </label>
+                      <h4 className="font-bold text-lg">
+                        {gouvernorat.gouverneur}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {gouvernorat.description}
+                      </p>
+                      <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                        {gouvernorat.telephone && (
+                          <span>
+                            <Phone className="w-3 h-3 inline" />{" "}
+                            {gouvernorat.telephone}
+                          </span>
+                        )}
+                        {gouvernorat.email && (
+                          <span>
+                            <Mail className="w-3 h-3 inline" />{" "}
+                            {gouvernorat.email}
+                          </span>
+                        )}
+                        {gouvernorat.siteWeb && (
+                          <span>
+                            <Globe className="w-3 h-3 inline" />{" "}
+                            {gouvernorat.siteWeb}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Aucun gouvernorat configuré. Cliquez sur Modifier pour
+                    ajouter.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* MINISTRES SUB-TAB */}
+            {villeSubTab === "ministres" && (
+              <div className="bg-white rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-500" />
+                    Ministres Provinciaux
+                    {gouvernorat?.ministres && (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        (
+                        {
+                          gouvernorat.ministres.filter(
+                            (m: any) => m.type !== "COMMISSAIRE_GENERAL",
+                          ).length
+                        }
+                        )
+                      </span>
+                    )}
+                  </h3>
+                  {gouvernorat && (
+                    <button
+                      onClick={() => {
+                        setShowAddMinistre(true);
+                        setMinistreForm({
+                          nom: "",
+                          portefeuille: "",
+                          type: "MINISTRE",
+                          photoUrl: "",
+                          telephone: "",
+                          email: "",
+                          biographie: "",
+                          ordre: (gouvernorat.ministres?.length || 0) + 1,
+                        });
+                      }}
+                      className="flex items-center gap-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" /> Ajouter un Ministre
+                    </button>
+                  )}
+                </div>
+
+                {showAddMinistre && gouvernorat && (
+                  <div className="bg-blue-50 rounded-xl p-4 mb-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-blue-800">
+                      Nouveau Ministre
+                    </h4>
+                    <CloudinaryUpload
+                      value={ministreForm.photoUrl}
+                      onChange={(url) =>
+                        setMinistreForm({ ...ministreForm, photoUrl: url })
+                      }
+                      label="Photo"
+                      size="sm"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <input
                         type="text"
-                        value={gouvForm.telephone}
+                        placeholder="Nom complet"
+                        value={ministreForm.nom}
                         onChange={(e) =>
-                          setGouvForm({
-                            ...gouvForm,
+                          setMinistreForm({
+                            ...ministreForm,
+                            nom: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Portefeuille / Ministère"
+                        value={ministreForm.portefeuille}
+                        onChange={(e) =>
+                          setMinistreForm({
+                            ...ministreForm,
+                            portefeuille: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Téléphone"
+                        value={ministreForm.telephone}
+                        onChange={(e) =>
+                          setMinistreForm({
+                            ...ministreForm,
                             telephone: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Email
-                      </label>
                       <input
                         type="email"
-                        value={gouvForm.email}
+                        placeholder="Email"
+                        value={ministreForm.email}
                         onChange={(e) =>
-                          setGouvForm({ ...gouvForm, email: e.target.value })
+                          setMinistreForm({
+                            ...ministreForm,
+                            email: e.target.value,
+                          })
                         }
-                        className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Site Web
-                      </label>
-                      <input
-                        type="url"
-                        value={gouvForm.siteWeb}
-                        onChange={(e) =>
-                          setGouvForm({ ...gouvForm, siteWeb: e.target.value })
-                        }
-                        className="w-full px-3 py-2 rounded-lg border border-border text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium mb-1">
-                        Adresse
-                      </label>
-                      <input
-                        type="text"
-                        value={gouvForm.adresse}
-                        onChange={(e) =>
-                          setGouvForm({ ...gouvForm, adresse: e.target.value })
-                        }
-                        className="w-full px-3 py-2 rounded-lg border border-border text-sm"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium mb-1">
-                        Description
+                        Biographie
                       </label>
                       <textarea
-                        value={gouvForm.description}
+                        placeholder="Biographie du ministre..."
+                        value={ministreForm.biographie}
                         onChange={(e) =>
-                          setGouvForm({
-                            ...gouvForm,
-                            description: e.target.value,
+                          setMinistreForm({
+                            ...ministreForm,
+                            biographie: e.target.value,
                           })
                         }
                         rows={3}
                         className="w-full px-3 py-2 rounded-lg border border-border text-sm"
                       />
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        upsertGouvMutation.mutate({
-                          id: gouvernorat?.id,
-                          gouverneur: gouvForm.gouverneur,
-                          photoUrl: gouvForm.photoUrl || undefined,
-                          adresse: gouvForm.adresse || undefined,
-                          telephone: gouvForm.telephone || undefined,
-                          email: gouvForm.email || undefined,
-                          siteWeb: gouvForm.siteWeb || undefined,
-                          description: gouvForm.description || undefined,
-                        })
-                      }
-                      disabled={upsertGouvMutation.isPending}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
-                    >
-                      <Save className="w-4 h-4" />
-                      {upsertGouvMutation.isPending
-                        ? "Enregistrement..."
-                        : "Enregistrer"}
-                    </button>
-                    <button
-                      onClick={() => setEditingGouv(false)}
-                      className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-gray-50 transition-colors"
-                    >
-                      Annuler
-                    </button>
-                  </div>
-                </div>
-              ) : gouvernorat ? (
-                <div className="flex items-center gap-4">
-                  {gouvernorat.photoUrl ? (
-                    <img
-                      src={gouvernorat.photoUrl}
-                      alt={gouvernorat.gouverneur}
-                      className="w-20 h-20 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
-                      {gouvernorat.gouverneur?.charAt(0) || "G"}
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="font-bold text-lg">
-                      {gouvernorat.gouverneur}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      {gouvernorat.description}
-                    </p>
-                    <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                      {gouvernorat.telephone && (
-                        <span>
-                          <Phone className="w-3 h-3 inline" />{" "}
-                          {gouvernorat.telephone}
-                        </span>
-                      )}
-                      {gouvernorat.email && (
-                        <span>
-                          <Mail className="w-3 h-3 inline" />{" "}
-                          {gouvernorat.email}
-                        </span>
-                      )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          createMinistreMutation.mutate({
+                            gouvernoratId: gouvernorat.id,
+                            nom: ministreForm.nom,
+                            portefeuille: ministreForm.portefeuille,
+                            type: "MINISTRE",
+                            photoUrl: ministreForm.photoUrl || undefined,
+                            telephone: ministreForm.telephone || undefined,
+                            email: ministreForm.email || undefined,
+                            biographie: ministreForm.biographie || undefined,
+                            ordre: ministreForm.ordre,
+                          })
+                        }
+                        disabled={
+                          !ministreForm.nom ||
+                          !ministreForm.portefeuille ||
+                          createMinistreMutation.isPending
+                        }
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        <Save className="w-3.5 h-3.5" /> Créer
+                      </button>
+                      <button
+                        onClick={() => setShowAddMinistre(false)}
+                        className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
+                      >
+                        Annuler
+                      </button>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Aucun gouvernorat configuré.
-                </p>
-              )}
-            </div>
+                )}
 
-            {/* MINISTRES SECTION */}
-            <div className="bg-white rounded-xl border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-500" />
-                  Ministres Provinciaux
-                  {gouvernorat?.ministres && (
-                    <span className="text-sm font-normal text-muted-foreground">
-                      ({gouvernorat.ministres.length})
-                    </span>
+                <div className="space-y-3">
+                  {gouvernorat?.ministres
+                    ?.filter((m: any) => m.type !== "COMMISSAIRE_GENERAL")
+                    .map((m: any) => (
+                      <div
+                        key={m.id}
+                        className="border border-border rounded-xl p-4"
+                      >
+                        {editingMinistreId === m.id ? (
+                          <div className="space-y-3">
+                            <CloudinaryUpload
+                              value={ministreForm.photoUrl}
+                              onChange={(url) =>
+                                setMinistreForm({
+                                  ...ministreForm,
+                                  photoUrl: url,
+                                })
+                              }
+                              label="Photo"
+                              size="sm"
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                value={ministreForm.nom}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    nom: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Nom"
+                              />
+                              <input
+                                type="text"
+                                value={ministreForm.portefeuille}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    portefeuille: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Portefeuille"
+                              />
+                              <input
+                                type="text"
+                                value={ministreForm.telephone}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    telephone: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Téléphone"
+                              />
+                              <input
+                                type="email"
+                                value={ministreForm.email}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    email: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Email"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">
+                                Biographie
+                              </label>
+                              <textarea
+                                value={ministreForm.biographie}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    biographie: e.target.value,
+                                  })
+                                }
+                                rows={3}
+                                className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Biographie..."
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() =>
+                                  updateMinistreMutation.mutate({
+                                    id: m.id,
+                                    nom: ministreForm.nom || undefined,
+                                    portefeuille:
+                                      ministreForm.portefeuille || undefined,
+                                    photoUrl:
+                                      ministreForm.photoUrl || undefined,
+                                    telephone:
+                                      ministreForm.telephone || undefined,
+                                    email: ministreForm.email || undefined,
+                                    biographie:
+                                      ministreForm.biographie || undefined,
+                                  })
+                                }
+                                disabled={updateMinistreMutation.isPending}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                              >
+                                <Save className="w-3.5 h-3.5" /> Enregistrer
+                              </button>
+                              <button
+                                onClick={() => setEditingMinistreId(null)}
+                                className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            {m.photoUrl ? (
+                              <img
+                                src={m.photoUrl}
+                                alt={m.nom}
+                                className="w-12 h-12 rounded-xl object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
+                                {m.nom?.charAt(0)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">{m.nom}</h4>
+                              <p className="text-xs text-primary">
+                                {m.portefeuille}
+                              </p>
+                              {m.biographie && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                                  {m.biographie}
+                                </p>
+                              )}
+                              <div className="flex gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                                {m.telephone && (
+                                  <span>
+                                    <Phone className="w-3 h-3 inline" />{" "}
+                                    {m.telephone}
+                                  </span>
+                                )}
+                                {m.email && (
+                                  <span>
+                                    <Mail className="w-3 h-3 inline" />{" "}
+                                    {m.email}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => {
+                                  setMinistreForm({
+                                    nom: m.nom || "",
+                                    portefeuille: m.portefeuille || "",
+                                    type: m.type || "MINISTRE",
+                                    photoUrl: m.photoUrl || "",
+                                    telephone: m.telephone || "",
+                                    email: m.email || "",
+                                    biographie: m.biographie || "",
+                                    ordre: m.ordre || 0,
+                                  });
+                                  setEditingMinistreId(m.id);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Modifier"
+                              >
+                                <Edit3 className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm("Supprimer ce ministre ?"))
+                                    deleteMinistreMutation.mutate({ id: m.id });
+                                }}
+                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  {(!gouvernorat?.ministres ||
+                    gouvernorat.ministres.filter(
+                      (m: any) => m.type !== "COMMISSAIRE_GENERAL",
+                    ).length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      Aucun ministre configuré
+                    </p>
                   )}
-                </h3>
-                {gouvernorat && (
+                </div>
+              </div>
+            )}
+
+            {/* COMMISSAIRES GENERAUX SUB-TAB */}
+            {villeSubTab === "commissaires" && (
+              <div className="bg-white rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Star className="w-5 h-5 text-amber-500" />
+                    Commissaires Généraux
+                    {gouvernorat?.ministres && (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        (
+                        {
+                          gouvernorat.ministres.filter(
+                            (m: any) => m.type === "COMMISSAIRE_GENERAL",
+                          ).length
+                        }
+                        )
+                      </span>
+                    )}
+                  </h3>
+                  {gouvernorat && (
+                    <button
+                      onClick={() => {
+                        setShowAddMinistre(true);
+                        setMinistreForm({
+                          nom: "",
+                          portefeuille: "",
+                          type: "COMMISSAIRE_GENERAL",
+                          photoUrl: "",
+                          telephone: "",
+                          email: "",
+                          biographie: "",
+                          ordre: (gouvernorat.ministres?.length || 0) + 1,
+                        });
+                      }}
+                      className="flex items-center gap-1.5 text-sm text-white bg-amber-600 hover:bg-amber-700 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" /> Ajouter un Commissaire
+                    </button>
+                  )}
+                </div>
+
+                {showAddMinistre &&
+                  gouvernorat &&
+                  ministreForm.type === "COMMISSAIRE_GENERAL" && (
+                    <div className="bg-amber-50 rounded-xl p-4 mb-4 space-y-3">
+                      <h4 className="text-sm font-semibold text-amber-800">
+                        Nouveau Commissaire Général
+                      </h4>
+                      <CloudinaryUpload
+                        value={ministreForm.photoUrl}
+                        onChange={(url) =>
+                          setMinistreForm({ ...ministreForm, photoUrl: url })
+                        }
+                        label="Photo"
+                        size="sm"
+                      />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          placeholder="Nom complet"
+                          value={ministreForm.nom}
+                          onChange={(e) =>
+                            setMinistreForm({
+                              ...ministreForm,
+                              nom: e.target.value,
+                            })
+                          }
+                          className="px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Portefeuille / Fonction"
+                          value={ministreForm.portefeuille}
+                          onChange={(e) =>
+                            setMinistreForm({
+                              ...ministreForm,
+                              portefeuille: e.target.value,
+                            })
+                          }
+                          className="px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Téléphone"
+                          value={ministreForm.telephone}
+                          onChange={(e) =>
+                            setMinistreForm({
+                              ...ministreForm,
+                              telephone: e.target.value,
+                            })
+                          }
+                          className="px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                        <input
+                          type="email"
+                          placeholder="Email"
+                          value={ministreForm.email}
+                          onChange={(e) =>
+                            setMinistreForm({
+                              ...ministreForm,
+                              email: e.target.value,
+                            })
+                          }
+                          className="px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Biographie
+                        </label>
+                        <textarea
+                          placeholder="Biographie..."
+                          value={ministreForm.biographie}
+                          onChange={(e) =>
+                            setMinistreForm({
+                              ...ministreForm,
+                              biographie: e.target.value,
+                            })
+                          }
+                          rows={3}
+                          className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() =>
+                            createMinistreMutation.mutate({
+                              gouvernoratId: gouvernorat.id,
+                              nom: ministreForm.nom,
+                              portefeuille: ministreForm.portefeuille,
+                              type: "COMMISSAIRE_GENERAL",
+                              photoUrl: ministreForm.photoUrl || undefined,
+                              telephone: ministreForm.telephone || undefined,
+                              email: ministreForm.email || undefined,
+                              biographie: ministreForm.biographie || undefined,
+                              ordre: ministreForm.ordre,
+                            })
+                          }
+                          disabled={
+                            !ministreForm.nom ||
+                            !ministreForm.portefeuille ||
+                            createMinistreMutation.isPending
+                          }
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50"
+                        >
+                          <Save className="w-3.5 h-3.5" /> Créer
+                        </button>
+                        <button
+                          onClick={() => setShowAddMinistre(false)}
+                          className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                <div className="space-y-3">
+                  {gouvernorat?.ministres
+                    ?.filter((m: any) => m.type === "COMMISSAIRE_GENERAL")
+                    .map((m: any) => (
+                      <div
+                        key={m.id}
+                        className="border border-border rounded-xl p-4"
+                      >
+                        {editingMinistreId === m.id ? (
+                          <div className="space-y-3">
+                            <CloudinaryUpload
+                              value={ministreForm.photoUrl}
+                              onChange={(url) =>
+                                setMinistreForm({
+                                  ...ministreForm,
+                                  photoUrl: url,
+                                })
+                              }
+                              label="Photo"
+                              size="sm"
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                value={ministreForm.nom}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    nom: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Nom"
+                              />
+                              <input
+                                type="text"
+                                value={ministreForm.portefeuille}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    portefeuille: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Fonction"
+                              />
+                              <input
+                                type="text"
+                                value={ministreForm.telephone}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    telephone: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Téléphone"
+                              />
+                              <input
+                                type="email"
+                                value={ministreForm.email}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    email: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Email"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">
+                                Biographie
+                              </label>
+                              <textarea
+                                value={ministreForm.biographie}
+                                onChange={(e) =>
+                                  setMinistreForm({
+                                    ...ministreForm,
+                                    biographie: e.target.value,
+                                  })
+                                }
+                                rows={3}
+                                className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Biographie..."
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() =>
+                                  updateMinistreMutation.mutate({
+                                    id: m.id,
+                                    nom: ministreForm.nom || undefined,
+                                    portefeuille:
+                                      ministreForm.portefeuille || undefined,
+                                    photoUrl:
+                                      ministreForm.photoUrl || undefined,
+                                    telephone:
+                                      ministreForm.telephone || undefined,
+                                    email: ministreForm.email || undefined,
+                                    biographie:
+                                      ministreForm.biographie || undefined,
+                                  })
+                                }
+                                disabled={updateMinistreMutation.isPending}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                              >
+                                <Save className="w-3.5 h-3.5" /> Enregistrer
+                              </button>
+                              <button
+                                onClick={() => setEditingMinistreId(null)}
+                                className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            {m.photoUrl ? (
+                              <img
+                                src={m.photoUrl}
+                                alt={m.nom}
+                                className="w-12 h-12 rounded-xl object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 font-bold">
+                                {m.nom?.charAt(0)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">{m.nom}</h4>
+                              <p className="text-xs text-amber-600">
+                                {m.portefeuille}
+                              </p>
+                              {m.biographie && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                                  {m.biographie}
+                                </p>
+                              )}
+                              <div className="flex gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                                {m.telephone && (
+                                  <span>
+                                    <Phone className="w-3 h-3 inline" />{" "}
+                                    {m.telephone}
+                                  </span>
+                                )}
+                                {m.email && (
+                                  <span>
+                                    <Mail className="w-3 h-3 inline" />{" "}
+                                    {m.email}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => {
+                                  setMinistreForm({
+                                    nom: m.nom || "",
+                                    portefeuille: m.portefeuille || "",
+                                    type: m.type || "COMMISSAIRE_GENERAL",
+                                    photoUrl: m.photoUrl || "",
+                                    telephone: m.telephone || "",
+                                    email: m.email || "",
+                                    biographie: m.biographie || "",
+                                    ordre: m.ordre || 0,
+                                  });
+                                  setEditingMinistreId(m.id);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Modifier"
+                              >
+                                <Edit3 className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm("Supprimer ce commissaire ?"))
+                                    deleteMinistreMutation.mutate({ id: m.id });
+                                }}
+                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  {(!gouvernorat?.ministres ||
+                    gouvernorat.ministres.filter(
+                      (m: any) => m.type === "COMMISSAIRE_GENERAL",
+                    ).length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      Aucun commissaire général configuré
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ASSEMBLEE PROVINCIALE SUB-TAB */}
+            {villeSubTab === "assemblee" && (
+              <div className="bg-white rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Users className="w-5 h-5 text-emerald-500" />
+                    Députés Provinciaux
+                    {deputes && (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        ({deputes.total})
+                      </span>
+                    )}
+                  </h3>
                   <button
                     onClick={() => {
-                      setShowAddMinistre(true);
-                      setMinistreForm({
+                      setShowAddDepute(true);
+                      setDeputeForm({
                         nom: "",
-                        portefeuille: "",
+                        parti: "",
+                        circonscription: "",
                         photoUrl: "",
                         telephone: "",
                         email: "",
-                        ordre: (gouvernorat.ministres?.length || 0) + 1,
+                        biographie: "",
                       });
                     }}
-                    className="flex items-center gap-1.5 text-sm text-white bg-primary hover:bg-primary-dark px-3 py-1.5 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" /> Ajouter
                   </button>
-                )}
-              </div>
-
-              {/* Add ministre form */}
-              {showAddMinistre && gouvernorat && (
-                <div className="bg-blue-50 rounded-xl p-4 mb-4 space-y-3">
-                  <h4 className="text-sm font-semibold text-blue-800">
-                    Nouveau Ministre
-                  </h4>
-                  <CloudinaryUpload
-                    value={ministreForm.photoUrl}
-                    onChange={(url) =>
-                      setMinistreForm({ ...ministreForm, photoUrl: url })
-                    }
-                    label="Photo"
-                    size="sm"
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Nom complet"
-                      value={ministreForm.nom}
-                      onChange={(e) =>
-                        setMinistreForm({
-                          ...ministreForm,
-                          nom: e.target.value,
-                        })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Portefeuille"
-                      value={ministreForm.portefeuille}
-                      onChange={(e) =>
-                        setMinistreForm({
-                          ...ministreForm,
-                          portefeuille: e.target.value,
-                        })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Téléphone"
-                      value={ministreForm.telephone}
-                      onChange={(e) =>
-                        setMinistreForm({
-                          ...ministreForm,
-                          telephone: e.target.value,
-                        })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={ministreForm.email}
-                      onChange={(e) =>
-                        setMinistreForm({
-                          ...ministreForm,
-                          email: e.target.value,
-                        })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        createMinistreMutation.mutate({
-                          gouvernoratId: gouvernorat.id,
-                          nom: ministreForm.nom,
-                          portefeuille: ministreForm.portefeuille,
-                          photoUrl: ministreForm.photoUrl || undefined,
-                          telephone: ministreForm.telephone || undefined,
-                          email: ministreForm.email || undefined,
-                          ordre: ministreForm.ordre,
-                        })
-                      }
-                      disabled={
-                        !ministreForm.nom ||
-                        !ministreForm.portefeuille ||
-                        createMinistreMutation.isPending
-                      }
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      <Save className="w-3.5 h-3.5" /> Créer
-                    </button>
-                    <button
-                      onClick={() => setShowAddMinistre(false)}
-                      className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
-                    >
-                      Annuler
-                    </button>
-                  </div>
                 </div>
-              )}
 
-              {/* Ministres list */}
-              <div className="space-y-3">
-                {gouvernorat?.ministres?.map((m) => (
-                  <div
-                    key={m.id}
-                    className="border border-border rounded-xl p-4"
-                  >
-                    {editingMinistreId === m.id ? (
-                      <div className="space-y-3">
-                        <CloudinaryUpload
-                          value={ministreForm.photoUrl}
-                          onChange={(url) =>
-                            setMinistreForm({ ...ministreForm, photoUrl: url })
-                          }
-                          label="Photo"
-                          size="sm"
-                        />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            value={ministreForm.nom}
-                            onChange={(e) =>
-                              setMinistreForm({
-                                ...ministreForm,
-                                nom: e.target.value,
-                              })
-                            }
-                            className="px-3 py-2 rounded-lg border border-border text-sm"
-                            placeholder="Nom"
-                          />
-                          <input
-                            type="text"
-                            value={ministreForm.portefeuille}
-                            onChange={(e) =>
-                              setMinistreForm({
-                                ...ministreForm,
-                                portefeuille: e.target.value,
-                              })
-                            }
-                            className="px-3 py-2 rounded-lg border border-border text-sm"
-                            placeholder="Portefeuille"
-                          />
-                          <input
-                            type="text"
-                            value={ministreForm.telephone}
-                            onChange={(e) =>
-                              setMinistreForm({
-                                ...ministreForm,
-                                telephone: e.target.value,
-                              })
-                            }
-                            className="px-3 py-2 rounded-lg border border-border text-sm"
-                            placeholder="Téléphone"
-                          />
-                          <input
-                            type="email"
-                            value={ministreForm.email}
-                            onChange={(e) =>
-                              setMinistreForm({
-                                ...ministreForm,
-                                email: e.target.value,
-                              })
-                            }
-                            className="px-3 py-2 rounded-lg border border-border text-sm"
-                            placeholder="Email"
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() =>
-                              updateMinistreMutation.mutate({
-                                id: m.id,
-                                nom: ministreForm.nom || undefined,
-                                portefeuille:
-                                  ministreForm.portefeuille || undefined,
-                                photoUrl: ministreForm.photoUrl || undefined,
-                                telephone: ministreForm.telephone || undefined,
-                                email: ministreForm.email || undefined,
-                              })
-                            }
-                            disabled={updateMinistreMutation.isPending}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
-                          >
-                            <Save className="w-3.5 h-3.5" /> Enregistrer
-                          </button>
-                          <button
-                            onClick={() => setEditingMinistreId(null)}
-                            className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
-                          >
-                            Annuler
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        {m.photoUrl ? (
-                          <img
-                            src={m.photoUrl}
-                            alt={m.nom}
-                            className="w-12 h-12 rounded-xl object-cover"
-                          />
+                {showAddDepute && (
+                  <div className="bg-emerald-50 rounded-xl p-4 mb-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-emerald-800">
+                      Nouveau Député
+                    </h4>
+                    <CloudinaryUpload
+                      value={deputeForm.photoUrl}
+                      onChange={(url) =>
+                        setDeputeForm({ ...deputeForm, photoUrl: url })
+                      }
+                      label="Photo"
+                      size="sm"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Nom complet"
+                        value={deputeForm.nom}
+                        onChange={(e) =>
+                          setDeputeForm({ ...deputeForm, nom: e.target.value })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Parti politique"
+                        value={deputeForm.parti}
+                        onChange={(e) =>
+                          setDeputeForm({
+                            ...deputeForm,
+                            parti: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Circonscription"
+                        value={deputeForm.circonscription}
+                        onChange={(e) =>
+                          setDeputeForm({
+                            ...deputeForm,
+                            circonscription: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Téléphone"
+                        value={deputeForm.telephone}
+                        onChange={(e) =>
+                          setDeputeForm({
+                            ...deputeForm,
+                            telephone: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        value={deputeForm.email}
+                        onChange={(e) =>
+                          setDeputeForm({
+                            ...deputeForm,
+                            email: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Biographie
+                      </label>
+                      <textarea
+                        placeholder="Biographie du député..."
+                        value={deputeForm.biographie}
+                        onChange={(e) =>
+                          setDeputeForm({
+                            ...deputeForm,
+                            biographie: e.target.value,
+                          })
+                        }
+                        rows={3}
+                        className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          createDeputeMutation.mutate({
+                            nom: deputeForm.nom,
+                            parti: deputeForm.parti || undefined,
+                            circonscription:
+                              deputeForm.circonscription || undefined,
+                            photoUrl: deputeForm.photoUrl || undefined,
+                            telephone: deputeForm.telephone || undefined,
+                            email: deputeForm.email || undefined,
+                            biographie: deputeForm.biographie || undefined,
+                          })
+                        }
+                        disabled={
+                          !deputeForm.nom || createDeputeMutation.isPending
+                        }
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        <Save className="w-3.5 h-3.5" /> Créer
+                      </button>
+                      <button
+                        onClick={() => setShowAddDepute(false)}
+                        className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {loadingDeputes ? (
+                  <div className="flex justify-center py-10">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {deputes?.items.map((d) => (
+                      <div
+                        key={d.id}
+                        className="border border-border rounded-xl p-4"
+                      >
+                        {editingDeputeId === d.id ? (
+                          <div className="space-y-3">
+                            <CloudinaryUpload
+                              value={deputeForm.photoUrl}
+                              onChange={(url) =>
+                                setDeputeForm({ ...deputeForm, photoUrl: url })
+                              }
+                              label="Photo"
+                              size="sm"
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                value={deputeForm.nom}
+                                onChange={(e) =>
+                                  setDeputeForm({
+                                    ...deputeForm,
+                                    nom: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Nom"
+                              />
+                              <input
+                                type="text"
+                                value={deputeForm.parti}
+                                onChange={(e) =>
+                                  setDeputeForm({
+                                    ...deputeForm,
+                                    parti: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Parti"
+                              />
+                              <input
+                                type="text"
+                                value={deputeForm.circonscription}
+                                onChange={(e) =>
+                                  setDeputeForm({
+                                    ...deputeForm,
+                                    circonscription: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Circonscription"
+                              />
+                              <input
+                                type="text"
+                                value={deputeForm.telephone}
+                                onChange={(e) =>
+                                  setDeputeForm({
+                                    ...deputeForm,
+                                    telephone: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Téléphone"
+                              />
+                              <input
+                                type="email"
+                                value={deputeForm.email}
+                                onChange={(e) =>
+                                  setDeputeForm({
+                                    ...deputeForm,
+                                    email: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Email"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">
+                                Biographie
+                              </label>
+                              <textarea
+                                value={deputeForm.biographie}
+                                onChange={(e) =>
+                                  setDeputeForm({
+                                    ...deputeForm,
+                                    biographie: e.target.value,
+                                  })
+                                }
+                                rows={3}
+                                className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Biographie..."
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() =>
+                                  updateDeputeMutation.mutate({
+                                    id: d.id,
+                                    nom: deputeForm.nom || undefined,
+                                    parti: deputeForm.parti || undefined,
+                                    circonscription:
+                                      deputeForm.circonscription || undefined,
+                                    photoUrl: deputeForm.photoUrl || undefined,
+                                    telephone:
+                                      deputeForm.telephone || undefined,
+                                    email: deputeForm.email || undefined,
+                                    biographie:
+                                      deputeForm.biographie || undefined,
+                                  })
+                                }
+                                disabled={updateDeputeMutation.isPending}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                              >
+                                <Save className="w-3.5 h-3.5" /> Enregistrer
+                              </button>
+                              <button
+                                onClick={() => setEditingDeputeId(null)}
+                                className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          </div>
                         ) : (
-                          <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-                            {m.nom?.charAt(0)}
+                          <div className="flex items-center gap-3">
+                            {d.photoUrl ? (
+                              <img
+                                src={d.photoUrl}
+                                alt={d.nom}
+                                className="w-11 h-11 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
+                                {d.nom?.charAt(0)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">{d.nom}</h4>
+                              {d.parti && (
+                                <span className="text-[11px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-md">
+                                  {d.parti}
+                                </span>
+                              )}
+                              {d.circonscription && (
+                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                  {d.circonscription}
+                                </p>
+                              )}
+                              {(d as any).biographie && (
+                                <p className="text-[11px] text-muted-foreground line-clamp-1">
+                                  {(d as any).biographie}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => {
+                                  setDeputeForm({
+                                    nom: d.nom || "",
+                                    parti: d.parti || "",
+                                    circonscription: d.circonscription || "",
+                                    photoUrl: d.photoUrl || "",
+                                    telephone: d.telephone || "",
+                                    email: d.email || "",
+                                    biographie: (d as any).biographie || "",
+                                  });
+                                  setEditingDeputeId(d.id);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Modifier"
+                              >
+                                <Edit3 className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm("Supprimer ce député ?"))
+                                    deleteDeputeMutation.mutate({ id: d.id });
+                                }}
+                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </button>
+                            </div>
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm">{m.nom}</h4>
-                          <p className="text-xs text-primary">
-                            {m.portefeuille}
-                          </p>
-                          <div className="flex gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                            {m.telephone && (
-                              <span>
-                                <Phone className="w-3 h-3 inline" />{" "}
-                                {m.telephone}
-                              </span>
-                            )}
-                            {m.email && (
-                              <span>
-                                <Mail className="w-3 h-3 inline" /> {m.email}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => {
-                              setMinistreForm({
-                                nom: m.nom || "",
-                                portefeuille: m.portefeuille || "",
-                                photoUrl: m.photoUrl || "",
-                                telephone: m.telephone || "",
-                                email: m.email || "",
-                                ordre: m.ordre || 0,
-                              });
-                              setEditingMinistreId(m.id);
-                            }}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Modifier"
-                          >
-                            <Edit3 className="w-4 h-4 text-muted-foreground" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm("Supprimer ce ministre ?"))
-                                deleteMinistreMutation.mutate({ id: m.id });
-                            }}
-                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </button>
-                        </div>
                       </div>
+                    ))}
+                    {(!deputes?.items || deputes.items.length === 0) && (
+                      <p className="text-sm text-muted-foreground text-center py-6 col-span-2">
+                        Aucun député configuré
+                      </p>
                     )}
                   </div>
-                ))}
-                {(!gouvernorat?.ministres ||
-                  gouvernorat.ministres.length === 0) && (
-                  <p className="text-sm text-muted-foreground text-center py-6">
-                    Aucun ministre configuré
-                  </p>
                 )}
               </div>
-            </div>
+            )}
 
-            {/* DEPUTES SECTION */}
-            <div className="bg-white rounded-xl border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Users className="w-5 h-5 text-emerald-500" />
-                  Députés Provinciaux
-                  {deputes && (
-                    <span className="text-sm font-normal text-muted-foreground">
-                      ({deputes.total})
-                    </span>
-                  )}
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowAddDepute(true);
-                    setDeputeForm({
-                      nom: "",
-                      parti: "",
-                      circonscription: "",
-                      photoUrl: "",
-                      telephone: "",
-                      email: "",
-                    });
-                  }}
-                  className="flex items-center gap-1.5 text-sm text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  <Plus className="w-4 h-4" /> Ajouter
-                </button>
-              </div>
-
-              {/* Add depute form */}
-              {showAddDepute && (
-                <div className="bg-emerald-50 rounded-xl p-4 mb-4 space-y-3">
-                  <h4 className="text-sm font-semibold text-emerald-800">
-                    Nouveau Député
-                  </h4>
-                  <CloudinaryUpload
-                    value={deputeForm.photoUrl}
-                    onChange={(url) =>
-                      setDeputeForm({ ...deputeForm, photoUrl: url })
-                    }
-                    label="Photo"
-                    size="sm"
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Nom complet"
-                      value={deputeForm.nom}
-                      onChange={(e) =>
-                        setDeputeForm({ ...deputeForm, nom: e.target.value })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Parti politique"
-                      value={deputeForm.parti}
-                      onChange={(e) =>
-                        setDeputeForm({ ...deputeForm, parti: e.target.value })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Circonscription"
-                      value={deputeForm.circonscription}
-                      onChange={(e) =>
-                        setDeputeForm({
-                          ...deputeForm,
-                          circonscription: e.target.value,
-                        })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Téléphone"
-                      value={deputeForm.telephone}
-                      onChange={(e) =>
-                        setDeputeForm({
-                          ...deputeForm,
-                          telephone: e.target.value,
-                        })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={deputeForm.email}
-                      onChange={(e) =>
-                        setDeputeForm({ ...deputeForm, email: e.target.value })
-                      }
-                      className="px-3 py-2 rounded-lg border border-border text-sm"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        createDeputeMutation.mutate({
-                          nom: deputeForm.nom,
-                          parti: deputeForm.parti || undefined,
-                          circonscription:
-                            deputeForm.circonscription || undefined,
-                          photoUrl: deputeForm.photoUrl || undefined,
-                          telephone: deputeForm.telephone || undefined,
-                          email: deputeForm.email || undefined,
-                        })
-                      }
-                      disabled={
-                        !deputeForm.nom || createDeputeMutation.isPending
-                      }
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                      <Save className="w-3.5 h-3.5" /> Créer
-                    </button>
-                    <button
-                      onClick={() => setShowAddDepute(false)}
-                      className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
-                    >
-                      Annuler
-                    </button>
-                  </div>
+            {/* GOUVERNEURS HISTORIQUES SUB-TAB */}
+            {villeSubTab === "historique" && (
+              <div className="bg-white rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <ScrollText className="w-5 h-5 text-purple-500" />
+                    Gouverneurs Historiques
+                    {gouverneursHist && (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        ({gouverneursHist.length})
+                      </span>
+                    )}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowAddGouverneurHist(true);
+                      setGouvHistForm({
+                        nom: "",
+                        photoUrl: "",
+                        dateDebut: "",
+                        dateFin: "",
+                        biographie: "",
+                        ordre: (gouverneursHist?.length || 0) + 1,
+                      });
+                    }}
+                    className="flex items-center gap-1.5 text-sm text-white bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" /> Ajouter
+                  </button>
                 </div>
-              )}
 
-              {/* Deputes list */}
-              {loadingDeputes ? (
-                <div className="flex justify-center py-10">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {deputes?.items.map((d) => (
-                    <div
-                      key={d.id}
-                      className="border border-border rounded-xl p-4"
-                    >
-                      {editingDeputeId === d.id ? (
-                        <div className="space-y-3">
-                          <CloudinaryUpload
-                            value={deputeForm.photoUrl}
-                            onChange={(url) =>
-                              setDeputeForm({ ...deputeForm, photoUrl: url })
-                            }
-                            label="Photo"
-                            size="sm"
-                          />
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <input
-                              type="text"
-                              value={deputeForm.nom}
-                              onChange={(e) =>
-                                setDeputeForm({
-                                  ...deputeForm,
-                                  nom: e.target.value,
-                                })
-                              }
-                              className="px-3 py-2 rounded-lg border border-border text-sm"
-                              placeholder="Nom"
-                            />
-                            <input
-                              type="text"
-                              value={deputeForm.parti}
-                              onChange={(e) =>
-                                setDeputeForm({
-                                  ...deputeForm,
-                                  parti: e.target.value,
-                                })
-                              }
-                              className="px-3 py-2 rounded-lg border border-border text-sm"
-                              placeholder="Parti"
-                            />
-                            <input
-                              type="text"
-                              value={deputeForm.circonscription}
-                              onChange={(e) =>
-                                setDeputeForm({
-                                  ...deputeForm,
-                                  circonscription: e.target.value,
-                                })
-                              }
-                              className="px-3 py-2 rounded-lg border border-border text-sm"
-                              placeholder="Circonscription"
-                            />
-                            <input
-                              type="text"
-                              value={deputeForm.telephone}
-                              onChange={(e) =>
-                                setDeputeForm({
-                                  ...deputeForm,
-                                  telephone: e.target.value,
-                                })
-                              }
-                              className="px-3 py-2 rounded-lg border border-border text-sm"
-                              placeholder="Téléphone"
-                            />
-                            <input
-                              type="email"
-                              value={deputeForm.email}
-                              onChange={(e) =>
-                                setDeputeForm({
-                                  ...deputeForm,
-                                  email: e.target.value,
-                                })
-                              }
-                              className="px-3 py-2 rounded-lg border border-border text-sm"
-                              placeholder="Email"
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() =>
-                                updateDeputeMutation.mutate({
-                                  id: d.id,
-                                  nom: deputeForm.nom || undefined,
-                                  parti: deputeForm.parti || undefined,
-                                  circonscription:
-                                    deputeForm.circonscription || undefined,
-                                  photoUrl: deputeForm.photoUrl || undefined,
-                                  telephone: deputeForm.telephone || undefined,
-                                  email: deputeForm.email || undefined,
-                                })
-                              }
-                              disabled={updateDeputeMutation.isPending}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
-                            >
-                              <Save className="w-3.5 h-3.5" /> Enregistrer
-                            </button>
-                            <button
-                              onClick={() => setEditingDeputeId(null)}
-                              className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
-                            >
-                              Annuler
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3">
-                          {d.photoUrl ? (
-                            <img
-                              src={d.photoUrl}
-                              alt={d.nom}
-                              className="w-11 h-11 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
-                              {d.nom?.charAt(0)}
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm">{d.nom}</h4>
-                            {d.parti && (
-                              <span className="text-[11px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-md">
-                                {d.parti}
-                              </span>
-                            )}
-                            {d.circonscription && (
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                {d.circonscription}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => {
-                                setDeputeForm({
-                                  nom: d.nom || "",
-                                  parti: d.parti || "",
-                                  circonscription: d.circonscription || "",
-                                  photoUrl: d.photoUrl || "",
-                                  telephone: d.telephone || "",
-                                  email: d.email || "",
-                                });
-                                setEditingDeputeId(d.id);
-                              }}
-                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="Modifier"
-                            >
-                              <Edit3 className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm("Supprimer ce député ?"))
-                                  deleteDeputeMutation.mutate({ id: d.id });
-                              }}
-                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-500" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                {showAddGouverneurHist && (
+                  <div className="bg-purple-50 rounded-xl p-4 mb-4 space-y-3">
+                    <h4 className="text-sm font-semibold text-purple-800">
+                      Nouveau Gouverneur Historique
+                    </h4>
+                    <CloudinaryUpload
+                      value={gouvHistForm.photoUrl}
+                      onChange={(url) =>
+                        setGouvHistForm({ ...gouvHistForm, photoUrl: url })
+                      }
+                      label="Photo"
+                      size="sm"
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input
+                        type="text"
+                        placeholder="Nom complet"
+                        value={gouvHistForm.nom}
+                        onChange={(e) =>
+                          setGouvHistForm({
+                            ...gouvHistForm,
+                            nom: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Début de mandat (ex: 1960)"
+                        value={gouvHistForm.dateDebut}
+                        onChange={(e) =>
+                          setGouvHistForm({
+                            ...gouvHistForm,
+                            dateDebut: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Fin de mandat (ex: 1965)"
+                        value={gouvHistForm.dateFin}
+                        onChange={(e) =>
+                          setGouvHistForm({
+                            ...gouvHistForm,
+                            dateFin: e.target.value,
+                          })
+                        }
+                        className="px-3 py-2 rounded-lg border border-border text-sm"
+                      />
                     </div>
-                  ))}
-                  {(!deputes?.items || deputes.items.length === 0) && (
-                    <p className="text-sm text-muted-foreground text-center py-6 col-span-2">
-                      Aucun député configuré
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Biographie
+                      </label>
+                      <textarea
+                        placeholder="Biographie..."
+                        value={gouvHistForm.biographie}
+                        onChange={(e) =>
+                          setGouvHistForm({
+                            ...gouvHistForm,
+                            biographie: e.target.value,
+                          })
+                        }
+                        rows={3}
+                        className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          createGouvHistMutation.mutate({
+                            nom: gouvHistForm.nom,
+                            photoUrl: gouvHistForm.photoUrl || undefined,
+                            dateDebut: gouvHistForm.dateDebut || undefined,
+                            dateFin: gouvHistForm.dateFin || undefined,
+                            biographie: gouvHistForm.biographie || undefined,
+                            ordre: gouvHistForm.ordre,
+                          })
+                        }
+                        disabled={
+                          !gouvHistForm.nom || createGouvHistMutation.isPending
+                        }
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        <Save className="w-3.5 h-3.5" /> Créer
+                      </button>
+                      <button
+                        onClick={() => setShowAddGouverneurHist(false)}
+                        className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {loadingGouvHist ? (
+                  <div className="flex justify-center py-10">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {gouverneursHist?.map((g) => (
+                      <div
+                        key={g.id}
+                        className="border border-border rounded-xl p-4"
+                      >
+                        {editingGouvHistId === g.id ? (
+                          <div className="space-y-3">
+                            <CloudinaryUpload
+                              value={gouvHistForm.photoUrl}
+                              onChange={(url) =>
+                                setGouvHistForm({
+                                  ...gouvHistForm,
+                                  photoUrl: url,
+                                })
+                              }
+                              label="Photo"
+                              size="sm"
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <input
+                                type="text"
+                                value={gouvHistForm.nom}
+                                onChange={(e) =>
+                                  setGouvHistForm({
+                                    ...gouvHistForm,
+                                    nom: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Nom"
+                              />
+                              <input
+                                type="text"
+                                value={gouvHistForm.dateDebut}
+                                onChange={(e) =>
+                                  setGouvHistForm({
+                                    ...gouvHistForm,
+                                    dateDebut: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Début mandat"
+                              />
+                              <input
+                                type="text"
+                                value={gouvHistForm.dateFin}
+                                onChange={(e) =>
+                                  setGouvHistForm({
+                                    ...gouvHistForm,
+                                    dateFin: e.target.value,
+                                  })
+                                }
+                                className="px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Fin mandat"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">
+                                Biographie
+                              </label>
+                              <textarea
+                                value={gouvHistForm.biographie}
+                                onChange={(e) =>
+                                  setGouvHistForm({
+                                    ...gouvHistForm,
+                                    biographie: e.target.value,
+                                  })
+                                }
+                                rows={3}
+                                className="w-full px-3 py-2 rounded-lg border border-border text-sm"
+                                placeholder="Biographie..."
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() =>
+                                  updateGouvHistMutation.mutate({
+                                    id: g.id,
+                                    nom: gouvHistForm.nom || undefined,
+                                    photoUrl:
+                                      gouvHistForm.photoUrl || undefined,
+                                    dateDebut:
+                                      gouvHistForm.dateDebut || undefined,
+                                    dateFin: gouvHistForm.dateFin || undefined,
+                                    biographie:
+                                      gouvHistForm.biographie || undefined,
+                                  })
+                                }
+                                disabled={updateGouvHistMutation.isPending}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                              >
+                                <Save className="w-3.5 h-3.5" /> Enregistrer
+                              </button>
+                              <button
+                                onClick={() => setEditingGouvHistId(null)}
+                                className="px-3 py-1.5 border border-border rounded-lg text-sm hover:bg-gray-50"
+                              >
+                                Annuler
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-4">
+                            {g.photoUrl ? (
+                              <img
+                                src={g.photoUrl}
+                                alt={g.nom}
+                                className="w-14 h-14 rounded-xl object-cover"
+                              />
+                            ) : (
+                              <div className="w-14 h-14 rounded-xl bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-lg">
+                                {g.nom?.charAt(0)}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold">{g.nom}</h4>
+                              <p className="text-sm text-purple-600">
+                                {g.dateDebut && g.dateFin
+                                  ? `${g.dateDebut} — ${g.dateFin}`
+                                  : g.dateDebut
+                                    ? `Depuis ${g.dateDebut}`
+                                    : ""}
+                              </p>
+                              {g.biographie && (
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {g.biographie}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => {
+                                  setGouvHistForm({
+                                    nom: g.nom || "",
+                                    photoUrl: g.photoUrl || "",
+                                    dateDebut: g.dateDebut || "",
+                                    dateFin: g.dateFin || "",
+                                    biographie: g.biographie || "",
+                                    ordre: g.ordre || 0,
+                                  });
+                                  setEditingGouvHistId(g.id);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Modifier"
+                              >
+                                <Edit3 className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm("Supprimer ce gouverneur ?"))
+                                    deleteGouvHistMutation.mutate({ id: g.id });
+                                }}
+                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {(!gouverneursHist || gouverneursHist.length === 0) && (
+                      <p className="text-sm text-muted-foreground text-center py-6">
+                        Aucun gouverneur historique configuré
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1416,40 +2345,7 @@ export default function AdminPage() {
         {activeTab === "lieux" && <AdminLieuxTab />}
 
         {/* PROJETS TAB */}
-        {activeTab === "projets" && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl border border-border p-6">
-              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                <FolderKanban className="w-5 h-5 text-primary" />
-                Gestion des Projets
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Gérez les projets de développement de la ville. Ajoutez de
-                nouveaux projets, mettez à jour leur statut et suivez leur
-                avancement.
-              </p>
-
-              {stats && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm">
-                    <span className="font-semibold">{stats.totalProjets}</span>{" "}
-                    projets enregistrés
-                  </p>
-                </div>
-              )}
-
-              <div className="mt-4 text-sm text-muted-foreground bg-blue-50 rounded-lg p-4">
-                <p className="font-medium text-blue-800 mb-1">
-                  💡 Gestion des projets
-                </p>
-                <p className="text-blue-700">
-                  Visitez la page &quot;Gestion de la Ville&quot; onglet Projets
-                  pour voir tous les projets publics.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === "projets" && <AdminProjetsTab />}
 
         {/* DOCUMENTS TAB */}
         {activeTab === "documents" && <AdminDocumentsTab />}
@@ -1996,6 +2892,18 @@ function AdminServicesTab() {
         </button>
       </div>
 
+      {/* Search bar */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Rechercher un service..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+
       {/* Inline Create Form */}
       {showCreate && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
@@ -2504,7 +3412,12 @@ function EditServiceModal({
 }
 
 function AdminLieuxTab() {
-  const { data, isLoading, error } = trpc.admin.getLieux.useQuery({});
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const { data, isLoading, error } = trpc.admin.getLieux.useQuery({
+    search: search || undefined,
+    type: typeFilter || undefined,
+  });
   const { data: communes } = trpc.admin.getCommunes.useQuery({});
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteLieu.useMutation({
@@ -2561,6 +3474,32 @@ function AdminLieuxTab() {
         >
           <Plus className="w-4 h-4" /> Nouveau lieu
         </button>
+      </div>
+
+      {/* Search & Filter */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Rechercher un lieu..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="px-3 py-2 rounded-xl border border-border text-sm"
+        >
+          <option value="">Tous les types</option>
+          {lieuTypes.map(([val, label]) => (
+            <option key={val} value={val}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Create form */}
@@ -2869,11 +3808,14 @@ function AdminLieuxTab() {
 }
 
 function AdminCommunesTab() {
+  const [search, setSearch] = useState("");
   const {
     data: communes,
     isLoading,
     error,
-  } = trpc.admin.getCommunes.useQuery({});
+  } = trpc.admin.getCommunes.useQuery({
+    search: search || undefined,
+  });
   const { data: districts } = trpc.admin.getDistricts.useQuery();
   const utils = trpc.useUtils();
   const deleteMut = trpc.admin.deleteCommune.useMutation({
@@ -2955,6 +3897,18 @@ function AdminCommunesTab() {
             <Plus className="w-4 h-4" /> Commune
           </button>
         </div>
+      </div>
+
+      {/* Search bar */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Rechercher une commune..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border text-sm focus:ring-2 focus:ring-primary/20"
+        />
       </div>
 
       {/* Create District inline */}
@@ -3389,9 +4343,10 @@ function AdminCommunesTab() {
 }
 
 function AdminSignalementsTab() {
-  const [statutFilter, setStatutFilter] = useState("");
+  const [traiteFilter, setTraiteFilter] = useState<string>("");
+  const [search, setSearch] = useState("");
   const { data, isLoading } = trpc.admin.getSignalements.useQuery({
-    statut: statutFilter || undefined,
+    traite: traiteFilter === "" ? undefined : traiteFilter === "true",
   });
   const utils = trpc.useUtils();
   const updateMut = trpc.admin.updateSignalement.useMutation({
@@ -3403,19 +4358,30 @@ function AdminSignalementsTab() {
     onError: (e) => alert("Erreur suppression: " + e.message),
   });
 
-  const STATUTS = ["", "EN_ATTENTE", "EN_COURS", "RESOLU", "REJETE"];
-  const STATUT_LABELS: Record<string, string> = {
-    EN_ATTENTE: "En attente",
-    EN_COURS: "En cours",
-    RESOLU: "Résolu",
-    REJETE: "Rejeté",
+  const TYPE_LABELS: Record<string, string> = {
+    INFO_ERRONNEE: "Information erronée",
+    CORRUPTION: "Corruption",
+    FERME: "Lieu fermé",
+    PRIX_INCORRECT: "Prix incorrect",
+    AUTRE: "Autre",
   };
-  const STATUT_COLORS: Record<string, string> = {
-    EN_ATTENTE: "bg-yellow-50 text-yellow-700",
-    EN_COURS: "bg-blue-50 text-blue-700",
-    RESOLU: "bg-emerald-50 text-emerald-700",
-    REJETE: "bg-red-50 text-red-700",
+  const TYPE_COLORS: Record<string, string> = {
+    INFO_ERRONNEE: "bg-blue-50 text-blue-700",
+    CORRUPTION: "bg-red-50 text-red-700",
+    FERME: "bg-gray-100 text-gray-700",
+    PRIX_INCORRECT: "bg-amber-50 text-amber-700",
+    AUTRE: "bg-purple-50 text-purple-700",
   };
+
+  const filteredItems = data?.items?.filter((sig: any) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      sig.description?.toLowerCase().includes(s) ||
+      sig.lieu?.nom?.toLowerCase().includes(s) ||
+      sig.email?.toLowerCase().includes(s)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -3424,20 +4390,36 @@ function AdminSignalementsTab() {
         Signalements ({data?.total || 0})
       </h3>
 
-      <div className="flex gap-2">
-        {STATUTS.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatutFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-              statutFilter === s
-                ? "bg-primary text-white"
-                : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
-            }`}
-          >
-            {s === "" ? "Tous" : STATUT_LABELS[s] || s}
-          </button>
-        ))}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Rechercher dans les signalements..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+          />
+        </div>
+        <div className="flex gap-2">
+          {[
+            { value: "", label: "Tous" },
+            { value: "false", label: "Non traités" },
+            { value: "true", label: "Traités" },
+          ].map((s) => (
+            <button
+              key={s.value}
+              onClick={() => setTraiteFilter(s.value)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                traiteFilter === s.value
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
@@ -3446,7 +4428,7 @@ function AdminSignalementsTab() {
         </div>
       ) : (
         <div className="space-y-4">
-          {data?.items.map((sig: any) => (
+          {filteredItems?.map((sig: any) => (
             <div
               key={sig.id}
               className="bg-white rounded-xl border border-border p-5"
@@ -3455,39 +4437,56 @@ function AdminSignalementsTab() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span
-                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${STATUT_COLORS[sig.statut] || "bg-gray-100 text-gray-600"}`}
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${TYPE_COLORS[sig.type] || "bg-gray-100 text-gray-600"}`}
                     >
-                      {STATUT_LABELS[sig.statut] || sig.statut}
+                      {TYPE_LABELS[sig.type] || sig.type}
                     </span>
+                    {sig.traite ? (
+                      <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-medium">
+                        ✓ Traité
+                      </span>
+                    ) : (
+                      <span className="text-xs px-2 py-0.5 bg-yellow-50 text-yellow-700 rounded-full font-medium">
+                        En attente
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {new Date(sig.createdAt).toLocaleDateString("fr-FR")}
                     </span>
                   </div>
-                  <h4 className="font-semibold text-foreground">{sig.type}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {sig.description}
-                  </p>
+                  <p className="text-sm text-foreground">{sig.description}</p>
                   {sig.lieu && (
                     <p className="text-xs text-primary mt-1">
-                      Lieu: {sig.lieu.nom}
+                      📍 Lieu: {sig.lieu.nom}
                     </p>
                   )}
                   {sig.email && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Par: {sig.email}
+                      ✉️ Par: {sig.email}
                     </p>
                   )}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 ml-3">
                   {!sig.traite && (
                     <button
                       onClick={() =>
-                        updateMut.mutate({ id: sig.id, statut: "RESOLU" })
+                        updateMut.mutate({ id: sig.id, traite: true })
                       }
-                      className="p-1.5 hover:bg-emerald-50 rounded-lg text-xs text-emerald-600 font-medium"
-                      title="Marquer résolu"
+                      className="px-3 py-1.5 hover:bg-emerald-50 rounded-lg text-xs text-emerald-600 font-medium border border-emerald-200"
+                      title="Marquer comme traité"
                     >
-                      Résoudre
+                      ✓ Traiter
+                    </button>
+                  )}
+                  {sig.traite && (
+                    <button
+                      onClick={() =>
+                        updateMut.mutate({ id: sig.id, traite: false })
+                      }
+                      className="px-3 py-1.5 hover:bg-yellow-50 rounded-lg text-xs text-yellow-600 font-medium border border-yellow-200"
+                      title="Remettre en attente"
+                    >
+                      Rouvrir
                     </button>
                   )}
                   <button
@@ -3504,7 +4503,7 @@ function AdminSignalementsTab() {
               </div>
             </div>
           ))}
-          {(!data?.items || data.items.length === 0) && (
+          {(!filteredItems || filteredItems.length === 0) && (
             <div className="text-center py-10 bg-white rounded-xl border border-border">
               <AlertTriangle className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">Aucun signalement</p>
@@ -3529,12 +4528,24 @@ function AdminAlertesTab() {
   });
 
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ titre: "", message: "", type: "INFO" });
+  const [form, setForm] = useState({
+    titre: "",
+    message: "",
+    type: "INFO",
+    dateDebut: "",
+    dateFin: "",
+  });
   const createMut = trpc.admin.createAlerte.useMutation({
     onSuccess: () => {
       utils.admin.getAlertes.invalidate();
       setShowAdd(false);
-      setForm({ titre: "", message: "", type: "INFO" });
+      setForm({
+        titre: "",
+        message: "",
+        type: "INFO",
+        dateDebut: "",
+        dateFin: "",
+      });
     },
     onError: (e) => alert("Erreur création: " + e.message),
   });
@@ -3592,6 +4603,32 @@ function AdminAlertesTab() {
               </button>
             ))}
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Date début
+              </label>
+              <input
+                type="datetime-local"
+                value={form.dateDebut}
+                onChange={(e) =>
+                  setForm({ ...form, dateDebut: e.target.value })
+                }
+                className="w-full mt-1 px-4 py-2.5 rounded-xl border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Date fin (optionnelle)
+              </label>
+              <input
+                type="datetime-local"
+                value={form.dateFin}
+                onChange={(e) => setForm({ ...form, dateFin: e.target.value })}
+                className="w-full mt-1 px-4 py-2.5 rounded-xl border border-border text-sm"
+              />
+            </div>
+          </div>
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => setShowAdd(false)}
@@ -3600,7 +4637,15 @@ function AdminAlertesTab() {
               Annuler
             </button>
             <button
-              onClick={() => createMut.mutate(form)}
+              onClick={() =>
+                createMut.mutate({
+                  titre: form.titre,
+                  message: form.message,
+                  type: form.type,
+                  dateDebut: form.dateDebut || undefined,
+                  dateFin: form.dateFin || undefined,
+                })
+              }
               disabled={!form.titre || !form.message}
               className="px-4 py-2 bg-primary text-white rounded-xl text-sm disabled:opacity-50"
             >
@@ -3629,7 +4674,7 @@ function AdminAlertesTab() {
                     >
                       {alerte.type}
                     </span>
-                    {alerte.active ? (
+                    {alerte.actif ? (
                       <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full">
                         Active
                       </span>
@@ -3654,13 +4699,13 @@ function AdminAlertesTab() {
                     onClick={() =>
                       toggleMut.mutate({
                         id: alerte.id,
-                        active: !alerte.active,
+                        actif: !alerte.actif,
                       })
                     }
                     className="p-1.5 hover:bg-gray-100 rounded-lg"
-                    title={alerte.active ? "Désactiver" : "Activer"}
+                    title={alerte.actif ? "Désactiver" : "Activer"}
                   >
-                    {alerte.active ? (
+                    {alerte.actif ? (
                       <ToggleRight className="w-5 h-5 text-emerald-500" />
                     ) : (
                       <ToggleLeft className="w-5 h-5 text-muted-foreground" />
@@ -3684,6 +4729,417 @@ function AdminAlertesTab() {
             <div className="text-center py-10 bg-white rounded-xl border border-border">
               <Bell className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">Aucune alerte</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AdminProjetsTab() {
+  const [search, setSearch] = useState("");
+  const [statutFilter, setStatutFilter] = useState("");
+  const { data, isLoading, error } = trpc.admin.getProjets.useQuery({
+    search: search || undefined,
+    statut: statutFilter || undefined,
+  });
+  const utils = trpc.useUtils();
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({
+    titre: "",
+    description: "",
+    statut: "PLANIFIE",
+    budget: "",
+    devise: "USD",
+    dateDebut: "",
+    dateFin: "",
+    localisation: "",
+    maitreDoeuvre: "",
+    categorie: "",
+  });
+
+  const createMut = trpc.admin.createProjet.useMutation({
+    onSuccess: () => {
+      utils.admin.getProjets.invalidate();
+      utils.admin.getStats.invalidate();
+      setShowCreate(false);
+      setForm({
+        titre: "",
+        description: "",
+        statut: "PLANIFIE",
+        budget: "",
+        devise: "USD",
+        dateDebut: "",
+        dateFin: "",
+        localisation: "",
+        maitreDoeuvre: "",
+        categorie: "",
+      });
+    },
+    onError: (e) => alert("Erreur création: " + e.message),
+  });
+  const updateMut = trpc.admin.updateProjet.useMutation({
+    onSuccess: () => utils.admin.getProjets.invalidate(),
+    onError: (e) => alert("Erreur mise à jour: " + e.message),
+  });
+  const deleteMut = trpc.admin.deleteProjet.useMutation({
+    onSuccess: () => {
+      utils.admin.getProjets.invalidate();
+      utils.admin.getStats.invalidate();
+    },
+    onError: (e) => alert("Erreur suppression: " + e.message),
+  });
+
+  const STATUTS = ["PLANIFIE", "EN_COURS", "TERMINE"];
+  const STATUT_LABELS: Record<string, string> = {
+    PLANIFIE: "Planifié",
+    EN_COURS: "En cours",
+    TERMINE: "Terminé",
+  };
+  const STATUT_COLORS: Record<string, string> = {
+    PLANIFIE: "bg-blue-50 text-blue-700",
+    EN_COURS: "bg-amber-50 text-amber-700",
+    TERMINE: "bg-emerald-50 text-emerald-700",
+  };
+  const CATEGORIES = [
+    "Infrastructure",
+    "Santé",
+    "Éducation",
+    "Transport",
+    "Eau & Assainissement",
+    "Énergie",
+    "Autre",
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <FolderKanban className="w-5 h-5 text-primary" />
+          Projets ({data?.total || 0})
+        </h3>
+        <button
+          onClick={() => setShowCreate(!showCreate)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" /> Nouveau projet
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Rechercher un projet..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setStatutFilter("")}
+            className={`px-3 py-2 rounded-lg text-sm font-medium ${statutFilter === "" ? "bg-gray-900 text-white" : "bg-white border border-border text-muted-foreground hover:bg-gray-50"}`}
+          >
+            Tous
+          </button>
+          {STATUTS.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatutFilter(s)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium ${statutFilter === s ? "bg-gray-900 text-white" : "bg-white border border-border text-muted-foreground hover:bg-gray-50"}`}
+            >
+              {STATUT_LABELS[s]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Create form */}
+      {showCreate && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-4">
+          <h4 className="font-bold text-sm text-blue-800">Nouveau projet</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="md:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Titre *
+              </label>
+              <input
+                value={form.titre}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, titre: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Description *
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, description: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm h-20 resize-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Statut
+              </label>
+              <select
+                value={form.statut}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, statut: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
+                {STATUTS.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUT_LABELS[s]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Catégorie
+              </label>
+              <select
+                value={form.categorie}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, categorie: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
+                <option value="">— Choisir —</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Budget
+              </label>
+              <input
+                type="number"
+                value={form.budget}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, budget: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Devise
+              </label>
+              <select
+                value={form.devise}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, devise: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              >
+                <option value="USD">USD</option>
+                <option value="FC">FC</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Date début
+              </label>
+              <input
+                type="date"
+                value={form.dateDebut}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, dateDebut: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Date fin
+              </label>
+              <input
+                type="date"
+                value={form.dateFin}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, dateFin: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Localisation
+              </label>
+              <input
+                value={form.localisation}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, localisation: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">
+                Maître d&apos;œuvre
+              </label>
+              <input
+                value={form.maitreDoeuvre}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, maitreDoeuvre: e.target.value }))
+                }
+                className="w-full mt-1 px-3 py-2 rounded-lg border border-border text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => setShowCreate(false)}
+              className="px-4 py-2 rounded-lg border border-border text-sm hover:bg-gray-50"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => {
+                if (!form.titre || !form.description) return;
+                createMut.mutate({
+                  titre: form.titre,
+                  description: form.description,
+                  statut: form.statut,
+                  budget: form.budget ? parseFloat(form.budget) : undefined,
+                  devise: form.devise,
+                  dateDebut: form.dateDebut || undefined,
+                  dateFin: form.dateFin || undefined,
+                  localisation: form.localisation || undefined,
+                  maitreDoeuvre: form.maitreDoeuvre || undefined,
+                  categorie: form.categorie || undefined,
+                });
+              }}
+              disabled={createMut.isPending}
+              className="px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />{" "}
+              {createMut.isPending ? "Création..." : "Créer"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+          <strong>Erreur:</strong> {error.message}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {data?.items.map((projet: any) => (
+            <div
+              key={projet.id}
+              className="bg-white rounded-xl border border-border p-5"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${STATUT_COLORS[projet.statut] || "bg-gray-100 text-gray-600"}`}
+                    >
+                      {STATUT_LABELS[projet.statut] || projet.statut}
+                    </span>
+                    {projet.categorie && (
+                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+                        {projet.categorie}
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(projet.createdAt).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-foreground">
+                    {projet.titre}
+                  </h4>
+                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    {projet.description}
+                  </p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
+                    {projet.budget && (
+                      <span className="font-medium text-foreground">
+                        {Number(projet.budget).toLocaleString()} {projet.devise}
+                      </span>
+                    )}
+                    {projet.localisation && (
+                      <span>📍 {projet.localisation}</span>
+                    )}
+                    {projet.maitreDoeuvre && (
+                      <span>🏗️ {projet.maitreDoeuvre}</span>
+                    )}
+                    {projet.dateDebut && (
+                      <span>
+                        Début:{" "}
+                        {new Date(projet.dateDebut).toLocaleDateString("fr-FR")}
+                      </span>
+                    )}
+                    {projet.dateFin && (
+                      <span>
+                        Fin:{" "}
+                        {new Date(projet.dateFin).toLocaleDateString("fr-FR")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-1 ml-3">
+                  <select
+                    value={projet.statut}
+                    onChange={(e) =>
+                      updateMut.mutate({
+                        id: projet.id,
+                        statut: e.target.value,
+                      })
+                    }
+                    className="text-xs px-2 py-1 rounded-md border border-border bg-white"
+                  >
+                    {STATUTS.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUT_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      if (confirm("Supprimer ce projet ?"))
+                        deleteMut.mutate({ id: projet.id });
+                    }}
+                    className="p-1.5 hover:bg-red-50 rounded-lg"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {(!data?.items || data.items.length === 0) && (
+            <div className="text-center py-10 bg-white rounded-xl border border-border">
+              <FolderKanban className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Aucun projet</p>
             </div>
           )}
         </div>
