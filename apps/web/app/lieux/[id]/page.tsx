@@ -268,6 +268,15 @@ export default function LieuDetailPage() {
 
   const { data: lieu, isLoading } = trpc.lieux.getById.useQuery({ id: lieuId });
 
+  // Get unique service categories for this lieu to fetch relevant documents
+  const serviceCategories = lieu?.servicesProposed
+    ? [...new Set(lieu.servicesProposed.map((s: LieuService) => s.categorie))]
+    : [];
+  const { data: relatedDocuments } = trpc.documents.getByCategories.useQuery(
+    { categories: serviceCategories as any[], limit: 20 },
+    { enabled: serviceCategories.length > 0 },
+  );
+
   const toggleService = (id: string) => {
     setExpandedServices((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
@@ -433,13 +442,35 @@ export default function LieuDetailPage() {
           </div>
         </section>
 
-        {/* Main content grid */}
+        {/* Map + Contact row */}
         <section className="py-6 px-4">
           <div className="container mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Main content */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Address & Contact */}
+              {/* Map — large, left */}
+              {lieu.latitude && lieu.longitude && (
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
+                  <div className="h-[400px]">
+                    <LieuMap
+                      latitude={Number(lieu.latitude)}
+                      longitude={Number(lieu.longitude)}
+                      nom={lieu.nom}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <Button
+                      variant="primary"
+                      className="w-full"
+                      onClick={handleGetDirections}
+                    >
+                      <Navigation className="w-4 h-4" />
+                      Obtenir l&apos;itinéraire
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Contact info — right sidebar */}
+              <div className="space-y-6">
                 <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
                   <h2 className="text-lg font-semibold text-foreground mb-4">
                     Informations de contact
@@ -527,215 +558,6 @@ export default function LieuDetailPage() {
                   </div>
                 </div>
 
-                {/* Services */}
-                <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-                  <h2 className="text-lg font-semibold text-foreground mb-4">
-                    Services disponibles ({lieu.servicesProposed.length})
-                  </h2>
-
-                  <div className="space-y-4">
-                    {Object.entries(servicesByCategory).map(
-                      ([categorie, services]) => (
-                        <div key={categorie}>
-                          <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                            <span>
-                              {SERVICE_CATEGORIE_ICONS[categorie] || "📋"}
-                            </span>
-                            {SERVICE_CATEGORIE_LABELS[categorie] || categorie}
-                          </h3>
-                          <div className="space-y-2">
-                            {services.map((service: LieuService) => {
-                              const isExpanded = expandedServices.includes(
-                                service.id,
-                              );
-                              return (
-                                <div
-                                  key={service.id}
-                                  className="border border-border rounded-lg overflow-hidden"
-                                >
-                                  <button
-                                    onClick={() => toggleService(service.id)}
-                                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
-                                  >
-                                    <div className="flex-1">
-                                      <p className="font-medium text-foreground">
-                                        {service.nomService}
-                                      </p>
-                                      <div className="flex items-center gap-4 mt-1 text-sm">
-                                        <span className="flex items-center gap-1 text-success font-medium">
-                                          <DollarSign className="w-3.5 h-3.5" />
-                                          {formatPrice(
-                                            service.prixOfficiel
-                                              ? Number(service.prixOfficiel)
-                                              : null,
-                                            service.devise,
-                                          )}
-                                        </span>
-                                        {service.delai && (
-                                          <span className="flex items-center gap-1 text-muted-foreground">
-                                            <Timer className="w-3.5 h-3.5" />
-                                            {service.delai}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {isExpanded ? (
-                                      <ChevronUp className="w-5 h-5 text-muted-foreground" />
-                                    ) : (
-                                      <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                                    )}
-                                  </button>
-
-                                  {isExpanded && (
-                                    <div className="px-4 pb-4 pt-2 border-t border-border bg-muted/30 space-y-3 animate-fade-in">
-                                      {service.description && (
-                                        <p className="text-sm text-muted-foreground">
-                                          {service.description}
-                                        </p>
-                                      )}
-
-                                      {service.documentsRequis &&
-                                        service.documentsRequis.length > 0 && (
-                                          <div>
-                                            <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                                              <FileText className="w-4 h-4 text-primary" />
-                                              Documents requis
-                                            </h4>
-                                            <ul className="text-sm text-muted-foreground space-y-1 ml-6">
-                                              {service.documentsRequis.map(
-                                                (doc: string, i: number) => (
-                                                  <li
-                                                    key={i}
-                                                    className="flex items-start gap-2"
-                                                  >
-                                                    <CheckCircle className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-                                                    {doc}
-                                                  </li>
-                                                ),
-                                              )}
-                                            </ul>
-                                          </div>
-                                        )}
-
-                                      {service.procedure && (
-                                        <div>
-                                          <h4 className="text-sm font-medium text-foreground mb-2">
-                                            Procédure
-                                          </h4>
-                                          <p className="text-sm text-muted-foreground whitespace-pre-line">
-                                            {service.procedure.replace(
-                                              /\\n/g,
-                                              "\n",
-                                            )}
-                                          </p>
-                                        </div>
-                                      )}
-
-                                      {service.conditionsParticulieres && (
-                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                          <p className="text-sm text-yellow-800">
-                                            <strong>Note:</strong>{" "}
-                                            {service.conditionsParticulieres.replace(
-                                              /\\n/g,
-                                              "\n",
-                                            )}
-                                          </p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </div>
-
-                {/* Reviews */}
-                <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-foreground">
-                      Avis ({lieu._count.avis})
-                    </h2>
-                    <Button variant="outline" size="sm">
-                      Donner un avis
-                    </Button>
-                  </div>
-
-                  {lieu.avis && lieu.avis.length > 0 ? (
-                    <div className="space-y-4">
-                      {lieu.avis.map((avis: LieuAvis) => (
-                        <div
-                          key={avis.id}
-                          className="border-b border-border pb-4 last:border-0 last:pb-0"
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="flex items-center gap-1">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`w-4 h-4 ${
-                                    star <= avis.note
-                                      ? "fill-yellow-400 text-yellow-400"
-                                      : "text-gray-300"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <span className="text-sm font-medium text-foreground">
-                              {avis.userName || "Utilisateur anonyme"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(avis.createdAt).toLocaleDateString(
-                                "fr-FR",
-                              )}
-                            </span>
-                          </div>
-                          {avis.commentaire && (
-                            <p className="text-sm text-muted-foreground">
-                              {avis.commentaire}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">
-                      Aucun avis pour le moment. Soyez le premier à donner votre
-                      avis!
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Sidebar */}
-              <div className="space-y-6">
-                {/* Map */}
-                {lieu.latitude && lieu.longitude && (
-                  <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
-                    <div className="h-64">
-                      <LieuMap
-                        latitude={Number(lieu.latitude)}
-                        longitude={Number(lieu.longitude)}
-                        nom={lieu.nom}
-                      />
-                    </div>
-                    <div className="p-4">
-                      <Button
-                        variant="primary"
-                        className="w-full"
-                        onClick={handleGetDirections}
-                      >
-                        <Navigation className="w-4 h-4" />
-                        Obtenir l'itinéraire
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
                 {/* Zone de Santé */}
                 {lieu.zoneSante && (
                   <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
@@ -772,6 +594,246 @@ export default function LieuDetailPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Services + Documents + Avis */}
+        <section className="pb-8 px-4">
+          <div className="container mx-auto space-y-6">
+            {/* Services */}
+            <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-foreground mb-4">
+                Services disponibles ({lieu.servicesProposed.length})
+              </h2>
+
+              <div className="space-y-4">
+                {Object.entries(servicesByCategory).map(
+                  ([categorie, services]) => (
+                    <div key={categorie}>
+                      <h3 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                        <span>
+                          {SERVICE_CATEGORIE_ICONS[categorie] || "📋"}
+                        </span>
+                        {SERVICE_CATEGORIE_LABELS[categorie] || categorie}
+                      </h3>
+                      <div className="space-y-2">
+                        {services.map((service: LieuService) => {
+                          const isExpanded = expandedServices.includes(
+                            service.id,
+                          );
+                          return (
+                            <div
+                              key={service.id}
+                              className="border border-border rounded-lg overflow-hidden"
+                            >
+                              <button
+                                onClick={() => toggleService(service.id)}
+                                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+                              >
+                                <div className="flex-1">
+                                  <p className="font-medium text-foreground">
+                                    {service.nomService}
+                                  </p>
+                                  <div className="flex items-center gap-4 mt-1 text-sm">
+                                    <span className="flex items-center gap-1 text-success font-medium">
+                                      <DollarSign className="w-3.5 h-3.5" />
+                                      {formatPrice(
+                                        service.prixOfficiel
+                                          ? Number(service.prixOfficiel)
+                                          : null,
+                                        service.devise,
+                                      )}
+                                    </span>
+                                    {service.delai && (
+                                      <span className="flex items-center gap-1 text-muted-foreground">
+                                        <Timer className="w-3.5 h-3.5" />
+                                        {service.delai}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {isExpanded ? (
+                                  <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                                )}
+                              </button>
+
+                              {isExpanded && (
+                                <div className="px-4 pb-4 pt-2 border-t border-border bg-muted/30 space-y-3 animate-fade-in">
+                                  {service.description && (
+                                    <p className="text-sm text-muted-foreground">
+                                      {service.description}
+                                    </p>
+                                  )}
+
+                                  {service.documentsRequis &&
+                                    service.documentsRequis.length > 0 && (
+                                      <div>
+                                        <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                                          <FileText className="w-4 h-4 text-primary" />
+                                          Documents requis
+                                        </h4>
+                                        <ul className="text-sm text-muted-foreground space-y-1 ml-6">
+                                          {service.documentsRequis.map(
+                                            (doc: string, i: number) => (
+                                              <li
+                                                key={i}
+                                                className="flex items-start gap-2"
+                                              >
+                                                <CheckCircle className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                                                {doc}
+                                              </li>
+                                            ),
+                                          )}
+                                        </ul>
+                                      </div>
+                                    )}
+
+                                  {service.procedure && (
+                                    <div>
+                                      <h4 className="text-sm font-medium text-foreground mb-2">
+                                        Procédure
+                                      </h4>
+                                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                                        {service.procedure.replace(
+                                          /\\n/g,
+                                          "\n",
+                                        )}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {service.conditionsParticulieres && (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                      <p className="text-sm text-yellow-800">
+                                        <strong>Note:</strong>{" "}
+                                        {service.conditionsParticulieres.replace(
+                                          /\\n/g,
+                                          "\n",
+                                        )}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+
+            {/* Documents disponibles */}
+            {relatedDocuments && relatedDocuments.length > 0 && (
+              <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Documents disponibles dans ce type de lieu (
+                  {relatedDocuments.length})
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {relatedDocuments.map((doc) => (
+                    <Link
+                      key={doc.id}
+                      href={`/documents/${doc.slug}`}
+                      className="flex items-start gap-3 p-4 border border-border rounded-xl hover:bg-primary/5 hover:border-primary/30 transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                          {doc.nom}
+                        </h4>
+                        {doc.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                            {doc.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                          {doc.prixEstimatif && (
+                            <span className="font-medium text-emerald-600">
+                              {formatPrice(
+                                Number(doc.prixEstimatif),
+                                doc.devise,
+                              )}
+                            </span>
+                          )}
+                          {doc.delaiEstimatif && (
+                            <span className="flex items-center gap-1">
+                              <Timer className="w-3 h-3" />
+                              {doc.delaiEstimatif}
+                            </span>
+                          )}
+                          <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">
+                            {SERVICE_CATEGORIE_LABELS[doc.categorie] ||
+                              doc.categorie}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Reviews */}
+            <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Avis ({lieu._count.avis})
+                </h2>
+                <Button variant="outline" size="sm">
+                  Donner un avis
+                </Button>
+              </div>
+
+              {lieu.avis && lieu.avis.length > 0 ? (
+                <div className="space-y-4">
+                  {lieu.avis.map((avis: LieuAvis) => (
+                    <div
+                      key={avis.id}
+                      className="border-b border-border pb-4 last:border-0 last:pb-0"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-4 h-4 ${
+                                star <= avis.note
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm font-medium text-foreground">
+                          {avis.userName || "Utilisateur anonyme"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(avis.createdAt).toLocaleDateString("fr-FR")}
+                        </span>
+                      </div>
+                      {avis.commentaire && (
+                        <p className="text-sm text-muted-foreground">
+                          {avis.commentaire}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  Aucun avis pour le moment. Soyez le premier à donner votre
+                  avis!
+                </p>
+              )}
             </div>
           </div>
         </section>

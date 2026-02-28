@@ -146,4 +146,23 @@ export const documentRouter = router({
         take: input.limit,
       });
     }),
+
+  // Get documents matching multiple categories (for lieu detail pages)
+  getByCategories: publicProcedure
+    .input(
+      z.object({
+        categories: z.array(serviceCategorieEnum).min(1),
+        limit: z.number().min(1).max(100).default(50),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.document.findMany({
+        where: {
+          categorie: { in: input.categories },
+          actif: true,
+        },
+        orderBy: { nom: "asc" },
+        take: input.limit,
+      });
+    }),
 });

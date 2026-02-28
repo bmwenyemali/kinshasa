@@ -66,42 +66,7 @@ export default function AdminPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
-  // Auth protection: require ADMINISTRATEUR role
-  React.useEffect(() => {
-    const stored = localStorage.getItem("kinservices_user");
-    if (!stored) {
-      window.location.href = "/auth/login";
-      return;
-    }
-    try {
-      const user = JSON.parse(stored);
-      if (user.role !== "ADMINISTRATEUR") {
-        window.location.href = "/";
-        return;
-      }
-      setIsAuthorized(true);
-    } catch {
-      window.location.href = "/auth/login";
-      return;
-    }
-    setAuthChecked(true);
-  }, []);
-
-  // Show nothing while checking auth
-  if (!authChecked || !isAuthorized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-muted-foreground text-sm">
-            Vérification des accès...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Ville management state
+  // Ville management state — ALL hooks must be before any conditional return
   const [villeSubTab, setVilleSubTab] = useState<
     "gouvernorat" | "ministres" | "commissaires" | "assemblee" | "historique"
   >("gouvernorat");
@@ -273,6 +238,41 @@ export default function AdminPage() {
       onSuccess: () => utils.admin.getGouverneursHistoriques.invalidate(),
       onError: (e) => alert("Erreur: " + e.message),
     });
+
+  // Auth protection: require ADMINISTRATEUR role
+  React.useEffect(() => {
+    const stored = localStorage.getItem("kinservices_user");
+    if (!stored) {
+      window.location.href = "/auth/login";
+      return;
+    }
+    try {
+      const user = JSON.parse(stored);
+      if (user.role !== "ADMINISTRATEUR") {
+        window.location.href = "/";
+        return;
+      }
+      setIsAuthorized(true);
+    } catch {
+      window.location.href = "/auth/login";
+      return;
+    }
+    setAuthChecked(true);
+  }, []);
+
+  // Show nothing while checking auth
+  if (!authChecked || !isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm">
+            Vérification des accès...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: "dashboard" as Tab, label: "Tableau de bord", icon: BarChart3 },
